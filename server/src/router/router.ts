@@ -6,6 +6,7 @@ import { TasksAndModels } from '../tasks'
 
 import { Federated } from './federated'
 import { Decentralized } from './decentralized'
+import { AntibiogoFederated } from './antibiogo_federated'
 import { Tasks } from './tasks'
 
 export class Router {
@@ -21,6 +22,7 @@ export class Router {
     const tasks = new Tasks(this.config, this.tasksAndModels)
     const federated = new Federated(wsApplier, this.tasksAndModels)
     const decentralized = new Decentralized(wsApplier, this.tasksAndModels)
+    const antibiogo = new AntibiogoFederated(wsApplier)
 
     this.ownRouter = express.Router()
     wsApplier.applyTo(this.ownRouter)
@@ -41,6 +43,7 @@ export class Router {
     })
     this.ownRouter.use('/deai', decentralized.router)
     this.ownRouter.use('/feai', federated.router)
+    this.ownRouter.use('/antibiogo-feai', antibiogo.router)
     this.ownRouter.use('/tasks', tasks.router)
   }
 
