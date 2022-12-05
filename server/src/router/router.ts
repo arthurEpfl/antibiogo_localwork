@@ -29,7 +29,7 @@ export class Router {
 
     process.nextTick(() =>
       wsApplier.getWss().on('connection', (ws, req) => {
-        if (!federated.isValidUrl(req.url) && !decentralized.isValidUrl(req.url)) {
+        if (!federated.isValidUrl(req.url) && !decentralized.isValidUrl(req.url) && !antibiogo.isValidUrl(req.url)) {
           console.log('Connection refused')
           ws.terminate()
           ws.close()

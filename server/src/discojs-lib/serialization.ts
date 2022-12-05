@@ -74,13 +74,13 @@ export async function encodeCentroids (centroids: Centroids): Promise<Encoded> {
 export function decodeCentroids (encoded: Encoded): Centroids {
   const raw = msgpack.decode(encoded)
 
-  const rawPositions = raw.positions
+  const rawPositions = raw._positions
 
   if (!(Array.isArray(rawPositions) && rawPositions.every(isSerialized))) {
     throw new Error('expected to decode an array of serialized weights')
   }
 
-  const positions = new WeightsContainer(rawPositions.map((w) => tf.tensor(w.data, w.shape)))
+  const positions: WeightsContainer = new WeightsContainer(rawPositions.map((w) => tf.tensor(w.data, w.shape)))
 
-  return new Centroids(positions, raw.radius, raw.counters)
+  return new Centroids(positions, raw._radius, raw._counters)
 }

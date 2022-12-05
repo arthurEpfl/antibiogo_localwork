@@ -7,15 +7,13 @@ import msgpack from 'msgpack-lite'
 
 import {
   client,
-  tf,
-  serialization,
-  aggregation,
   AsyncInformant,
-  Task,
   TaskID,
   AsyncBuffer,
   WeightsContainer
 } from '@epfml/discojs-node'
+
+import * as aggregation from '../discojs-lib/aggregation'
 
 import messages = client.federated.messages
 import messageTypes = client.messages.type
@@ -66,7 +64,7 @@ export class AntibiogoFederated {
     this.ownRouter = express.Router()
     wsApplier.applyTo(this.ownRouter)
 
-    this.initTask(new Centroids(WeightsContainer.of([0]), [0], [0])) // TODO: setup initial centroid on server?
+    this.initTask(new Centroids(WeightsContainer.of([0, 0, 0, 0, 0]), [0, 0, 0, 0, 0], [0, 0, 0, 0, 0])) // TODO: setup initial centroid on server?
 
     this.ownRouter.get('/', (_, res) => res.send(this.description + '\n'))
 
@@ -139,15 +137,15 @@ export class AntibiogoFederated {
   }
 
   protected buildRoute (): string {
-    return `/antibiogo-feai/:clientId`
+    return `/:clientId`
   }
 
   public isValidUrl (url: string | undefined): boolean {
     const splittedUrl = url?.split('/')
 
-    return (splittedUrl !== undefined && splittedUrl.length === 4 && splittedUrl[0] === '' &&
-      this.isValidClientId(splittedUrl[2]) &&
-      this.isValidWebSocket(splittedUrl[3]))
+    return (splittedUrl !== undefined && splittedUrl.length === 3 && splittedUrl[0] === '' &&
+      this.isValidClientId(splittedUrl[1]) &&
+      this.isValidWebSocket(splittedUrl[2]))
   }
 
   protected isValidClientId (clientId: string): boolean {
@@ -180,7 +178,7 @@ export class AntibiogoFederated {
         this.logsAppend(clientId, RequestType.Connect, 0)
         this.sendConnectedMsg(ws)
       } else if (msg.type === messageTypes.postWeightsToServer) {
-        const rawWeights = msg.weights.positions
+        const rawWeights = msg.weights
         const round = msg.round
 
         this.logsAppend(
@@ -199,6 +197,8 @@ export class AntibiogoFederated {
         }
 
         const centroids: Centroids = decodeCentroids(msg.weights)  // in this case weights is a SerializedCentroids object
+        
+        console.log('received centroids from client', clientId, 'for round', round, 'centroids: positions=', centroids.positions.weights[0].dataSync(), 'counters=', centroids.counters, 'radius=', centroids.radius)
 
         const buffer = this.asyncBuffer
         if (buffer === undefined) {
@@ -306,6 +306,14 @@ export class AntibiogoFederated {
     byzantineRobustAggregator: boolean,
     tauPercentile: number
   ): Promise<void> {
+
+    centroids.forEach((centroid) => {
+      console.log('centroids: received=', centroid.positions.weights[0].dataSync(), 'this=', this.centroids.positions.weights[0].dataSync())
+      if (centroid.positions.weights[0].shape[0] !== this.centroids.positions.weights[0].shape[0]) {
+        throw new Error('Centroids positions length mismatch ' + centroid.positions.weights[0].shape[0] + ' but expected ' + this.centroids.positions.weights[0].shape[0]) // Do not support different number of weights for now
+      }
+    })
+
     const centroidPositions: List<WeightsContainer> = centroids.map((centroid) => centroid.positions)
 
     // Get averaged centroids position
@@ -324,10 +332,14 @@ export class AntibiogoFederated {
       (centroid) => centroid.counters.map((count, index) => count - this.centroids.counters[index])) // difference between new and old counters
       .reduce((accumulator, counters) => accumulator.map((count, index) => count + counters[index]) , this.centroids.counters) // add all differences to existing centroids
 
-    const updatedCentroids = new Centroids(averagedPosition, this.centroids.radius, updatedCounters)
+    const updatedCentroids = new Centroids(averagedPosition,
+       this.centroids.radius, // We don't update the radius currently
+       updatedCounters)
 
     // Update model
     this.centroids = updatedCentroids
+
+    console.log('updated centroids on server: position=', updatedCentroids.positions.weights[0].dataSync(), 'counters=', updatedCentroids.counters, 'radius=', updatedCentroids.radius)
   }
 
   /**
