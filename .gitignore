@@ -2,8 +2,9 @@
 node_modules/
 
 # Server-related files
+model.csv
 model.json
-weights.bin
+*.bin
 weights_round*.json
 
 # TODO be more specific

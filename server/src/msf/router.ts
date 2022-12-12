@@ -1,9 +1,8 @@
 import express from 'express'
 import WebSocket from 'ws'
-
-import { List, Map, Set } from 'immutable'
-import { antibiogo } from './antibiogo_task'
 import msgpack from 'msgpack-lite'
+import { List, Map, Set } from 'immutable'
+import expressWs = require('express-ws')
 
 import {
   client,
@@ -13,14 +12,14 @@ import {
   WeightsContainer
 } from '@epfml/discojs-node'
 
-import * as aggregation from '../discojs-lib/aggregation'
-
+import * as aggregation from './aggregation'
+import { Centroids, CentroidEntry, readFromCsv, writeToCsv, fromEntries } from './centroids'
+import { antibiogo } from './task'
 import messages = client.federated.messages
 import messageTypes = client.messages.type
 import clientConnected = client.messages.type.clientConnected
-import expressWs = require('express-ws')
-import { Centroids } from '../discojs-lib/centroids'
-import { decodeCentroids, encodeCentroids } from '../discojs-lib/serialization'
+import { decodeCentroids, encodeCentroids } from './serialization'
+import { CONFIG } from '../config'
 
 const BUFFER_CAPACITY = 1 // We aggregate centroids directly
 
@@ -57,14 +56,13 @@ interface TaskStatus {
 export class AntibiogoFederated {
   private readonly ownRouter: expressWs.Router
 
-  private readonly tasks: string[] = new Array<string>()
   private readonly UUIDRegexExp = /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/gi
 
   constructor (wsApplier: expressWs.Instance) {
     this.ownRouter = express.Router()
     wsApplier.applyTo(this.ownRouter)
 
-    this.initTask(new Centroids(WeightsContainer.of([0, 0, 0, 0, 0]), [0, 0, 0, 0, 0], [0, 0, 0, 0, 0])) // TODO: setup initial centroid on server?
+    this.initTask()
 
     this.ownRouter.get('/', (_, res) => res.send(this.description + '\n'))
 
@@ -78,11 +76,13 @@ export class AntibiogoFederated {
     })
   }
 
-  protected initTask (initialCentroids: Centroids): void {
+  protected initTask (): void {
     this.tasksStatus = this.tasksStatus.set(antibiogo.taskID, {
       isRoundPending: false,
       round: 0
     })
+
+    this.centroids = readFromCsv(CONFIG.prototypicalPath)
 
     const isByzantineRobust: boolean = antibiogo.trainingInformation?.byzantineRobustAggregator ?? false
     const tauPercentile: number = antibiogo.trainingInformation?.tauPercentile ?? 0
@@ -96,15 +96,13 @@ export class AntibiogoFederated {
     this.asyncBuffer = buffer
 
     this.asyncInformant = new AsyncInformant(buffer)
-
-    this.centroids = initialCentroids
   }
 
   public get router (): express.Router {
     return this.ownRouter
   }
 
-  // Current state of centroids on the server 
+  // Current state of centroids on the server
   private centroids!: Centroids
 
   // model weights received from clients for a given task and round.
@@ -115,9 +113,7 @@ export class AntibiogoFederated {
    * Contains metadata used for training by clients for a given task and round.
    * Stored by task ID, round number and client ID.
    */
-  private metadataMap =
-  Map<number, Map<string, Map<string, string>>>
-  ()
+  private metadataMap = Map<number, Map<string, Map<string, string>>>()
 
   // Contains all successful requests made to the server.
   // TODO use real log system
@@ -137,7 +133,7 @@ export class AntibiogoFederated {
   }
 
   protected buildRoute (): string {
-    return `/:clientId`
+    return '/:clientId'
   }
 
   public isValidUrl (url: string | undefined): boolean {
@@ -155,7 +151,6 @@ export class AntibiogoFederated {
   protected isValidWebSocket (urlEnd: string): boolean {
     return urlEnd === '.websocket'
   }
-
 
   protected sendConnectedMsg (ws: WebSocket): void {
     const msg: messages.messageGeneral = { type: clientConnected }
@@ -196,13 +191,19 @@ export class AntibiogoFederated {
           throw new Error('invalid weights format')
         }
 
-        const centroids: Centroids = decodeCentroids(msg.weights)  // in this case weights is a SerializedCentroids object
-        
-        console.log('received centroids from client', clientId, 'for round', round, 'centroids: positions=', centroids.positions.weights[0].dataSync(), 'counters=', centroids.counters, 'radius=', centroids.radius)
+        const centroids: Centroids = decodeCentroids(msg.weights) // in this case weights is a SerializedCentroids object
+
+        console.log(
+          'received centroids from client', clientId,
+          'for round', round,
+          'centroids: positions=', centroids.positions.weights[0].dataSync(),
+          'counters=', centroids.counts,
+          'radius=', centroids.radius
+        )
 
         const buffer = this.asyncBuffer
         if (buffer === undefined) {
-          throw new Error(`post weight to unknown task:'antibiogo'`)
+          throw new Error('post weight to unknown task:\'antibiogo\'')
         }
 
         void buffer.add(clientId, centroids, round)
@@ -293,59 +294,87 @@ export class AntibiogoFederated {
     })
   }
 
-  /**
-   * Save the newly aggregated model to the server's local storage. This
-   * is now the model served to clients for the given task. To save the newly
-   * aggregated weights, here is the (cumbersome) procedure:
-   * 1. create a new TF.js model with the right layers
-   * 2. assign the newly aggregated weights to it
-   * 3. save the model
-   */
   private async aggregateAndStoreCentroids (
     centroids: List<Centroids>,
     byzantineRobustAggregator: boolean,
     tauPercentile: number
   ): Promise<void> {
+    if (!centroids.every((centroid) => centroid.positions.weights[0].shape[0] !== this.centroids.positions.weights[0].shape[0])) {
+      throw new Error('Centroid positions shape mismatch')
+    }
 
-    centroids.forEach((centroid) => {
-      console.log('centroids: received=', centroid.positions.weights[0].dataSync(), 'this=', this.centroids.positions.weights[0].dataSync())
-      if (centroid.positions.weights[0].shape[0] !== this.centroids.positions.weights[0].shape[0]) {
-        throw new Error('Centroids positions length mismatch ' + centroid.positions.weights[0].shape[0] + ' but expected ' + this.centroids.positions.weights[0].shape[0]) // Do not support different number of weights for now
-      }
-    })
+    const updatedCentroids = centroids.take(this.centroids.labels.length)
 
-    const centroidPositions: List<WeightsContainer> = centroids.map((centroid) => centroid.positions)
+    const updatedPositions = updatedCentroids.map((centroid) => centroid.positions)
 
     // Get averaged centroids position
-    const averagedPosition = byzantineRobustAggregator && tauPercentile > 0 && tauPercentile < 1
-      ? aggregation.avgClippingWeights(centroidPositions, this.centroids.positions, tauPercentile)
-      : aggregation.avg(centroidPositions)
+    const averagedPositions = byzantineRobustAggregator && tauPercentile > 0 && tauPercentile < 1
+      ? aggregation.avgClippingWeights(updatedPositions, this.centroids.positions, tauPercentile)
+      : aggregation.avg(updatedPositions)
 
-    centroids.forEach((centroid) => {
-      if (centroid.counters.length !== this.centroids.counters.length) {
-        throw new Error('Centroids counters length mismatch') // Do not support different number of counters for now
-      }
-    })
-    
+    if (!centroids.every((centroid) => centroid.counts.length !== this.centroids.counts.length)) {
+      throw new Error('Centroids counts length mismatch')
+    }
+
     // There is probably a clearer/easier way to do this
-    const updatedCounters = centroids.map(
-      (centroid) => centroid.counters.map((count, index) => count - this.centroids.counters[index])) // difference between new and old counters
-      .reduce((accumulator, counters) => accumulator.map((count, index) => count + counters[index]) , this.centroids.counters) // add all differences to existing centroids
+    const updatedCounts = updatedCentroids.map((centroid) =>
+      centroid.counts.map((count, index) =>
+        count - this.centroids.counts[index]))
+      .reduce((acc: number[], counts) =>
+        acc.map((count, index) =>
+          count + counts[index]),
+      this.centroids.counts)
 
-    const updatedCentroids = new Centroids(averagedPosition,
-       this.centroids.radius, // We don't update the radius currently
-       updatedCounters)
+    // Handle new labels
+    const newCentroids = centroids.takeLast(centroids.size - updatedPositions.size)
+    const newPositions = List(newCentroids
+      .map((centroid) => centroid.positions)
+      .reduce((acc: WeightsContainer, e) => new WeightsContainer(acc.weights.concat(e.weights))).weights)
+    const newRadiuses = newCentroids
+      .flatMap((centroid) => centroid.radius)
+    const newCounts = newCentroids
+      .flatMap((centroid) => centroid.counts)
+    const newLabels = newCentroids
+      .flatMap((centroid) => centroid.labels)
+
+    const newEntriesPerLabel = (newPositions
+      .zip(newRadiuses, newRadiuses, newCounts, newLabels) as List<CentroidEntry>)
+      .groupBy((e) => e[3])
+    const nbEntriesPerLabel = newEntriesPerLabel.map((es) => es.count())
+    const newEntries = newEntriesPerLabel
+      .map((es) => es.reduce((acc: CentroidEntry, e) => [
+        acc[0].add(e[0]),
+        acc[1] + e[1],
+        acc[2] + e[2],
+        acc[3]
+      ] as CentroidEntry))
+      .map(([p, r, c, l], idx) => {
+        const size = nbEntriesPerLabel.get(idx)
+        if (size === undefined) {
+          throw new Error()
+        }
+        return [p.div(size), r / size, c, l] as CentroidEntry
+      })
+      .toList()
+
+    const updatedEntries = List(averagedPositions.weights)
+      .zip(List(this.centroids.radius), List(updatedCounts), List(this.centroids.labels)) as List<CentroidEntry>
+
+    // Reorder everything by label
+    const entries = updatedEntries.concat(newEntries).sortBy((e) => e[3])
 
     // Update model
-    this.centroids = updatedCentroids
+    this.centroids = fromEntries(entries)
 
-    console.log('updated centroids on server: position=', updatedCentroids.positions.weights[0].dataSync(), 'counters=', updatedCentroids.counters, 'radius=', updatedCentroids.radius)
+    // Save to local file system
+    writeToCsv(CONFIG.prototypicalPath, this.centroids)
   }
 
   /**
    * Appends the given request to the server logs.
-   * @param {Request} request received from client
-   * @param {String} type of the request
+   * @param clientId
+   * @param type
+   * @param round
    */
   private logsAppend (
     clientId: string,

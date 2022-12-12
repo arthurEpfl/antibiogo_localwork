@@ -9,15 +9,12 @@ interface Serialized {
 }
 
 export class SerializedCentroids {
-  private readonly _positions: Serialized[]
-  private readonly _radius: number[]
-  private readonly _counters: number[]
-
-  constructor (positions: Serialized[], radius: number[], counters: number[]) {
-    this._positions = positions
-    this._radius = radius
-    this._counters = counters
-  }
+  constructor (
+    private readonly _positions: Serialized[],
+    private readonly _radius: number[],
+    private readonly _counts: number[],
+    private readonly _labels: string[]
+  ) {}
 
   get positions (): Serialized[] {
     return this._positions
@@ -27,8 +24,12 @@ export class SerializedCentroids {
     return this._radius
   }
 
-  get counters (): number[] {
-    return this._counters
+  get counts (): number[] {
+    return this._counts
+  }
+
+  get labels (): string[] {
+    return this._labels
   }
 }
 
@@ -68,7 +69,14 @@ export async function encodeCentroids (centroids: Centroids): Promise<Encoded> {
     }
   }))
 
-  return [...msgpack.encode(new SerializedCentroids(serialized, centroids.radius, centroids.counters)).values()]
+  const serializedCentroids = new SerializedCentroids(
+    serialized,
+    centroids.radius,
+    centroids.counts,
+    centroids.labels
+  )
+
+  return [...msgpack.encode(serializedCentroids).values()]
 }
 
 export function decodeCentroids (encoded: Encoded): Centroids {
@@ -80,7 +88,12 @@ export function decodeCentroids (encoded: Encoded): Centroids {
     throw new Error('expected to decode an array of serialized weights')
   }
 
-  const positions: WeightsContainer = new WeightsContainer(rawPositions.map((w) => tf.tensor(w.data, w.shape)))
+  const positions = new WeightsContainer(rawPositions.map((w) => tf.tensor(w.data, w.shape)))
 
-  return new Centroids(positions, raw._radius, raw._counters)
+  return new Centroids(
+    positions,
+    raw._radius,
+    raw._counters,
+    raw._labels
+  )
 }

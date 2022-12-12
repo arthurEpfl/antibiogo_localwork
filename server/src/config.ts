@@ -2,6 +2,8 @@ import path from 'path'
 
 import { Path, TaskID } from '@epfml/discojs-node'
 
+import { antibiogo } from './msf'
+
 export class Config {
   public readonly serverUrl: URL
 
@@ -13,7 +15,9 @@ export class Config {
     public readonly modelsDir: Path,
 
     // port to bind the server to
-    public readonly serverPort: number
+    public readonly serverPort: number,
+
+    public readonly prototypicalPath: string
   ) {
     const url = new URL('http://localhost')
     url.port = `${serverPort}`
@@ -41,5 +45,6 @@ const ROOT_DIR = path.join(__filename, '..', '..', '..')
 export const CONFIG = new Config(
   'file://',
   path.join(ROOT_DIR, 'server', 'models'),
-  8080
+  8080,
+  path.join(ROOT_DIR, 'server', 'models', antibiogo.taskID, 'model.csv')
 )
