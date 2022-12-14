@@ -8,12 +8,11 @@ import {
   client,
   AsyncInformant,
   TaskID,
-  AsyncBuffer,
-  WeightsContainer
+  AsyncBuffer
 } from '@epfml/discojs-node'
 
 import * as aggregation from './aggregation'
-import { Centroids, CentroidEntry, readFromCsv, writeToCsv, fromEntries } from './centroids'
+import { Centroids, CentroidEntry, readFromCsv, writeToCsv, fromEntries, toEntries } from './centroids'
 import { antibiogo } from './task'
 import messages = client.federated.messages
 import messageTypes = client.messages.type
@@ -182,16 +181,14 @@ export class AntibiogoFederated {
           round
         )
 
-        if (
-          !(
-            Array.isArray(rawWeights) &&
-            rawWeights.every((e) => typeof e === 'number')
-          )
-        ) {
+        if (!(
+          Array.isArray(rawWeights) &&
+          rawWeights.every((e) => typeof e === 'number')
+        )) {
           throw new Error('invalid weights format')
         }
 
-        const centroids: Centroids = decodeCentroids(msg.weights) // in this case weights is a SerializedCentroids object
+        const centroids: Centroids = decodeCentroids(rawWeights) // in this case weights is a SerializedCentroids object
 
         console.log(
           'received centroids from client', clientId,
@@ -299,72 +296,68 @@ export class AntibiogoFederated {
     byzantineRobustAggregator: boolean,
     tauPercentile: number
   ): Promise<void> {
-    if (!centroids.every((centroid) => centroid.positions.weights[0].shape[0] !== this.centroids.positions.weights[0].shape[0])) {
+    if (!centroids.every((centroid) =>
+      centroid.positions.weights[0].shape[0] === this.centroids.positions.weights[0].shape[0])) {
       throw new Error('Centroid positions shape mismatch')
     }
 
-    const updatedCentroids = centroids.take(this.centroids.labels.length)
+    // Handle updated centroids with known labels
+    const knownCentroids = centroids
+      .map((clientCentroids) => toEntries(clientCentroids)
+        .take(this.centroids.labels.length))
+      .filter((es) => es
+        .zip(List(this.centroids.labels))
+        .every(([e, l]) => e[3] === l))
 
-    const updatedPositions = updatedCentroids.map((centroid) => centroid.positions)
+    const knownPositions = knownCentroids.map((clientCentroids) =>
+      clientCentroids.map((e) => e[0]))
 
-    // Get averaged centroids position
     const averagedPositions = byzantineRobustAggregator && tauPercentile > 0 && tauPercentile < 1
-      ? aggregation.avgClippingWeights(updatedPositions, this.centroids.positions, tauPercentile)
-      : aggregation.avg(updatedPositions)
+      ? aggregation.avgClippingWeights(knownPositions, this.centroids.positions, tauPercentile)
+      : aggregation.avg(knownPositions)
 
-    if (!centroids.every((centroid) => centroid.counts.length !== this.centroids.counts.length)) {
+    if (!centroids.every((centroid) => centroid.counts.length === this.centroids.counts.length)) {
       throw new Error('Centroids counts length mismatch')
     }
 
-    // There is probably a clearer/easier way to do this
-    const updatedCounts = updatedCentroids.map((centroid) =>
-      centroid.counts.map((count, index) =>
-        count - this.centroids.counts[index]))
+    const knownCounts = knownCentroids.map((clientCentroids) =>
+      clientCentroids.map((e, idx) =>
+        e[2] - this.centroids.counts[idx]))
       .reduce((acc: number[], counts) =>
-        acc.map((count, index) =>
-          count + counts[index]),
+        acc.map((count, idx) =>
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          count + counts.get(idx)!),
       this.centroids.counts)
 
+    const updatedCentroids = List(averagedPositions.weights)
+      .zip(List(this.centroids.radius), List(knownCounts), List(this.centroids.labels)) as List<CentroidEntry>
+
     // Handle new labels
-    const newCentroids = centroids.takeLast(centroids.size - updatedPositions.size)
-    const newPositions = List(newCentroids
-      .map((centroid) => centroid.positions)
-      .reduce((acc: WeightsContainer, e) => new WeightsContainer(acc.weights.concat(e.weights))).weights)
-    const newRadiuses = newCentroids
-      .flatMap((centroid) => centroid.radius)
-    const newCounts = newCentroids
-      .flatMap((centroid) => centroid.counts)
-    const newLabels = newCentroids
-      .flatMap((centroid) => centroid.labels)
+    const newLabelsCount = this.centroids.labels.length - knownCentroids.size
 
-    const newEntriesPerLabel = (newPositions
-      .zip(newRadiuses, newRadiuses, newCounts, newLabels) as List<CentroidEntry>)
-      .groupBy((e) => e[3])
-    const nbEntriesPerLabel = newEntriesPerLabel.map((es) => es.count())
-    const newEntries = newEntriesPerLabel
-      .map((es) => es.reduce((acc: CentroidEntry, e) => [
-        acc[0].add(e[0]),
-        acc[1] + e[1],
-        acc[2] + e[2],
-        acc[3]
-      ] as CentroidEntry))
-      .map(([p, r, c, l], idx) => {
-        const size = nbEntriesPerLabel.get(idx)
-        if (size === undefined) {
-          throw new Error()
-        }
-        return [p.div(size), r / size, c, l] as CentroidEntry
-      })
-      .toList()
+    if (newLabelsCount === 0) {
+      // Reorder everything by label and update model
+      this.centroids = fromEntries(updatedCentroids)
+    } else {
+      const unknownCentroids = centroids.map((clientCentroids) =>
+        toEntries(clientCentroids).takeLast(newLabelsCount))
+      const perLabel = unknownCentroids.flatMap((e) => e).groupBy((e) => e[3])
+      const newCentroids = perLabel
+        .map((es) => {
+          const [p, r, c, l] = es.reduce((acc: CentroidEntry, e) => [
+            acc[0].add(e[0]),
+            acc[1] + e[1],
+            acc[2] + e[2],
+            acc[3]
+          ] as CentroidEntry)
+          const size = es.count()
+          return [p.div(size), r / size, c, l] as CentroidEntry
+        })
+        .toList()
 
-    const updatedEntries = List(averagedPositions.weights)
-      .zip(List(this.centroids.radius), List(updatedCounts), List(this.centroids.labels)) as List<CentroidEntry>
-
-    // Reorder everything by label
-    const entries = updatedEntries.concat(newEntries).sortBy((e) => e[3])
-
-    // Update model
-    this.centroids = fromEntries(entries)
+      // Reorder everything by label and update model
+      this.centroids = fromEntries(updatedCentroids.concat(newCentroids).sortBy((e) => e[3]))
+    }
 
     // Save to local file system
     writeToCsv(CONFIG.prototypicalPath, this.centroids)

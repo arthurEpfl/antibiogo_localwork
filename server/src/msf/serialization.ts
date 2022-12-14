@@ -93,7 +93,7 @@ export function decodeCentroids (encoded: Encoded): Centroids {
   return new Centroids(
     positions,
     raw._radius,
-    raw._counters,
+    raw._counts,
     raw._labels
   )
 }
