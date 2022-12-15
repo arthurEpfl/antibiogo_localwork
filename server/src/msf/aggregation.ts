@@ -1,4 +1,5 @@
 import { List } from 'immutable'
+
 import { tf, WeightsContainer } from '@epfml/discojs-node'
 
 type TensorLike = tf.Tensor | ArrayLike<number>
