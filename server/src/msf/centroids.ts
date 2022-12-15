@@ -12,7 +12,6 @@ export class Centroids {
     private readonly _counts: number[],
     private readonly _labels: string[]
   ) {
-    console.log(_positions, _radius, _counts, _labels)
     if (![_radius, _counts, _labels].every((e) =>
       e.length === _positions.weights.length)) {
       throw new Error('Given collections differ in length')

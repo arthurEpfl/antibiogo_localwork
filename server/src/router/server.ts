@@ -4,7 +4,6 @@ import WebSocket from 'ws'
 
 import { tf, Task } from '@epfml/discojs-node'
 
-import { Tasks } from '../msf/tasks'
 import { antibiogo } from '../msf'
 
 export abstract class Server {

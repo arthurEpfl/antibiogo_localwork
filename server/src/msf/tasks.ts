@@ -11,7 +11,9 @@ export class Tasks {
 
     this.ownRouter.get(`/${antibiogo.taskID}`, (_, res) => {
       const centroids = centroid.readFromCsv(CONFIG.prototypicalPath)
-      void serialization.encodeCentroids(centroids).then((r) => res.send(r))
+      serialization.encodeCentroids(centroids)
+        .then((encoded) => res.send(encoded))
+        .catch(console.error)
     })
   }
 

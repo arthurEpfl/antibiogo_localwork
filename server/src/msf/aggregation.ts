@@ -14,7 +14,6 @@ function parseWeights (weights: Iterable<WeightsLike | WeightsContainer>): List<
     throw new Error('no weights to work with')
   }
   if (!r.rest().isEmpty() && r.rest().every((w) => {
-    console.log('every w', w)
     return w.weights.length !== weightsSize
   })) {
     throw new Error('weights dimensions are different for some of the operands')

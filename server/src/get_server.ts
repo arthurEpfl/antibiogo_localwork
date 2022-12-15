@@ -1,13 +1,15 @@
+import http from 'node:http'
+import fs from 'node:fs'
+import path from 'node:path'
 import cors from 'cors'
 import express from 'express'
 import expressWS from 'express-ws'
 
 import { CONFIG } from './config'
 import { Router } from './router'
-import { tf, Task, TaskProvider } from '@epfml/discojs-node'
-import * as http from 'http'
+import axios from 'axios'
 
-export class Disco {
+export class AntibiogoServer {
   private readonly _app: express.Application
 
   constructor () {
@@ -38,7 +40,14 @@ export class Disco {
   }
 }
 
-export async function runDefaultServer (port?: number): Promise<http.Server> {
-  const disco = new Disco()
-  return disco.serve(port)
+export async function runAntibiogoServer (port?: number): Promise<http.Server> {
+  const server = new AntibiogoServer()
+
+  if (!fs.existsSync(CONFIG.prototypicalPath)) {
+    fs.mkdirSync(path.dirname(CONFIG.prototypicalPath), { recursive: true })
+    const response = await axios.get(CONFIG.prototypicalBucket)
+    fs.writeFileSync(CONFIG.prototypicalPath, response.data)
+  }
+
+  return server.serve(port)
 }
