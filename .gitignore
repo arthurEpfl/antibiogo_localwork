@@ -4,6 +4,9 @@
 .DS_Store
 node_modules/
 
+.vscode
+.idea
+
 # Server-related files
 model.csv
 model.json
@@ -13,3 +16,4 @@ weights_round*.json
 # TODO be more specific
 milestones/
 dist/
+
