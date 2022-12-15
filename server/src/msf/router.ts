@@ -329,27 +329,32 @@ export class AntibiogoFederated {
           count + counts.get(idx)!),
       this.centroids.counts)
 
-    const updatedCentroids = List(averagedPositions.weights)
-      .zip(List(this.centroids.radius), List(knownCounts), List(this.centroids.labels)) as List<CentroidEntry>
+    const updatedCentroids = toEntries(new Centroids(
+      averagedPositions,
+      this.centroids.radius,
+      knownCounts,
+      this.centroids.labels
+    ))
 
     // Handle new labels
-    const newLabelsCount = this.centroids.labels.length - knownCentroids.size
+    const unknownCentroids = centroids
+      .map((clientCentroids) => toEntries(clientCentroids)
+        .slice(this.centroids.labels.length))
+      .filter((e) => e.size > 0)
 
-    if (newLabelsCount === 0) {
+    if (unknownCentroids.size === 0) {
       // Reorder everything by label and update model
       this.centroids = fromEntries(updatedCentroids)
     } else {
-      const unknownCentroids = centroids.map((clientCentroids) =>
-        toEntries(clientCentroids).takeLast(newLabelsCount))
       const perLabel = unknownCentroids.flatMap((e) => e).groupBy((e) => e[3])
       const newCentroids = perLabel
         .map((es) => {
-          const [p, r, c, l] = es.reduce((acc: CentroidEntry, e) => [
+          const [p, r, c, l]: CentroidEntry = es.reduce((acc: CentroidEntry, e) => [
             acc[0].add(e[0]),
             acc[1] + e[1],
             acc[2] + e[2],
             acc[3]
-          ] as CentroidEntry)
+          ])
           const size = es.count()
           return [p.div(size), r / size, c, l] as CentroidEntry
         })
