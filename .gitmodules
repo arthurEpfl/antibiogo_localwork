@@ -1,0 +1,3 @@
+[submodule "discojs"]
+	path = discojs
+	url = git@github.com:foundationmsf/epfl-antibiogo-lib.git
