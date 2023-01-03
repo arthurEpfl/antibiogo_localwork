@@ -300,6 +300,9 @@ export class AntibiogoFederated {
       centroid.positions.weights[0].shape[0] === this.centroids.positions.weights[0].shape[0])) {
       throw new Error('Centroid positions shape mismatch')
     }
+    if (!centroids.every((centroid) => centroid.counts.length >= this.centroids.counts.length)) {
+      throw new Error('Centroids counts length mismatch')
+    }
 
     // Handle updated centroids with known labels
     const knownCentroids = centroids
@@ -315,10 +318,6 @@ export class AntibiogoFederated {
     const averagedPositions = byzantineRobustAggregator && tauPercentile > 0 && tauPercentile < 1
       ? aggregation.avgClippingWeights(knownPositions, this.centroids.positions, tauPercentile)
       : aggregation.avg(knownPositions)
-
-    if (!centroids.every((centroid) => centroid.counts.length === this.centroids.counts.length)) {
-      throw new Error('Centroids counts length mismatch')
-    }
 
     const knownCounts = knownCentroids.map((clientCentroids) =>
       clientCentroids.map((e, idx) =>
