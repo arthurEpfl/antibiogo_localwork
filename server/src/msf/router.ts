@@ -8,16 +8,17 @@ import {
   client,
   AsyncInformant,
   TaskID,
-  AsyncBuffer
-} from '@epfml/discojs-node'
+  AsyncBuffer,
+  Centroids,
+  aggregation,
+  serialization,
+  msf
+} from 'epfl-antibiogo-lib'
 
-import * as aggregation from './aggregation'
-import { Centroids, CentroidEntry, readFromCsv, writeToCsv, fromEntries, toEntries } from './centroids'
-import { antibiogo } from './task'
+import { CentroidEntry, readFromCsv, writeToCsv, fromEntries, toEntries } from './centroids'
 import messages = client.federated.messages
 import messageTypes = client.messages.type
 import clientConnected = client.messages.type.clientConnected
-import { decodeCentroids, encodeCentroids } from './serialization'
 import { CONFIG } from '../config'
 
 const BUFFER_CAPACITY = 1 // We aggregate centroids directly
@@ -76,18 +77,18 @@ export class AntibiogoFederated {
   }
 
   protected initTask (): void {
-    this.tasksStatus = this.tasksStatus.set(antibiogo.taskID, {
+    this.tasksStatus = this.tasksStatus.set(msf.antibiogo.taskID, {
       isRoundPending: false,
       round: 0
     })
 
     this.centroids = readFromCsv(CONFIG.prototypicalPath)
 
-    const isByzantineRobust: boolean = antibiogo.trainingInformation?.byzantineRobustAggregator ?? false
-    const tauPercentile: number = antibiogo.trainingInformation?.tauPercentile ?? 0
+    const isByzantineRobust: boolean = msf.antibiogo.trainingInformation?.byzantineRobustAggregator ?? false
+    const tauPercentile: number = msf.antibiogo.trainingInformation?.tauPercentile ?? 0
 
     const buffer = new AsyncBuffer<Centroids>(
-      antibiogo.taskID,
+      msf.antibiogo.taskID,
       BUFFER_CAPACITY,
       async (centroids: Iterable<Centroids>) =>
         await this.aggregateAndStoreCentroids(List(centroids), isByzantineRobust, tauPercentile)
@@ -188,7 +189,7 @@ export class AntibiogoFederated {
           throw new Error('invalid weights format')
         }
 
-        const centroids: Centroids = decodeCentroids(rawWeights) // in this case weights is a SerializedCentroids object
+        const centroids: Centroids = serialization.weights.decodeCentroids(rawWeights) // in this case weights is a SerializedCentroids object
 
         console.log(
           'received centroids from client', clientId,
@@ -217,7 +218,7 @@ export class AntibiogoFederated {
       } else if (msg.type === messageTypes.latestServerRound) {
         const buffer = this.asyncBuffer
         if (buffer === undefined) {
-          throw new Error(`get round of unknown task: ${antibiogo.taskID}`)
+          throw new Error(`get round of unknown task: ${msf.antibiogo.taskID}`)
         }
 
         // Get latest round
@@ -225,7 +226,7 @@ export class AntibiogoFederated {
 
         this.logsAppend(clientId, RequestType.GetAsyncRound, 0)
 
-        void encodeCentroids(this.centroids).then((serializedWeights) => {
+        void serialization.weights.encodeCentroids(this.centroids).then((serializedWeights) => {
           const msg: messages.latestServerRound = {
             type: messageTypes.latestServerRound,
             round: round,
@@ -384,7 +385,7 @@ export class AntibiogoFederated {
 
     this.logs = this.logs.push({
       timestamp: new Date(),
-      task: antibiogo.taskID,
+      task: msf.antibiogo.taskID,
       round,
       client: clientId,
       request: type

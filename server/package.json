@@ -20,6 +20,7 @@
     "@koush/wrtc": "0.5",
     "axios": "^1.2.1",
     "cors": "2",
+    "epfl-antibiogo-lib": "file:../discojs",
     "express": "4",
     "express-ws": "5",
     "immutable": "4",

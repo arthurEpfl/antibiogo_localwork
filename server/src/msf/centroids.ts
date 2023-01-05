@@ -1,39 +1,9 @@
 import fs from 'node:fs'
 import { List } from 'immutable'
 
-import { tf, WeightsContainer } from '@epfml/discojs-node'
+import { tf, WeightsContainer, Centroids } from 'epfl-antibiogo-lib'
 
 export type CentroidEntry = [tf.Tensor, number, number, string]
-
-export class Centroids {
-  constructor (
-    private readonly _positions: WeightsContainer,
-    private readonly _radius: number[],
-    private readonly _counts: number[],
-    private readonly _labels: string[]
-  ) {
-    if (![_radius, _counts, _labels].every((e) =>
-      e.length === _positions.weights.length)) {
-      throw new Error('Given collections differ in length')
-    }
-  }
-
-  get positions (): WeightsContainer {
-    return this._positions
-  }
-
-  get radius (): number[] {
-    return this._radius
-  }
-
-  get counts (): number[] {
-    return this._counts
-  }
-
-  get labels (): string[] {
-    return this._labels
-  }
-}
 
 export function fromEntries (entries: List<CentroidEntry>): Centroids {
   return new Centroids(
