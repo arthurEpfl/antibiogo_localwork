@@ -1,4 +1,4 @@
-import { tf } from '@epfml/discojs-node'
+import { tf } from 'epfl-antibiogo-lib'
 
 export { AntibiogoServer, runAntibiogoServer } from './get_server'
 
