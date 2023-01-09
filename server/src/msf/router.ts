@@ -9,9 +9,7 @@ import {
   AsyncInformant,
   TaskID,
   AsyncBuffer,
-  Centroids,
   aggregation,
-  serialization,
   msf
 } from 'epfl-antibiogo-lib'
 
@@ -87,10 +85,10 @@ export class AntibiogoFederated {
     const isByzantineRobust: boolean = msf.antibiogo.trainingInformation?.byzantineRobustAggregator ?? false
     const tauPercentile: number = msf.antibiogo.trainingInformation?.tauPercentile ?? 0
 
-    const buffer = new AsyncBuffer<Centroids>(
+    const buffer = new AsyncBuffer<msf.Centroids>(
       msf.antibiogo.taskID,
       BUFFER_CAPACITY,
-      async (centroids: Iterable<Centroids>) =>
+      async (centroids: Iterable<msf.Centroids>) =>
         await this.aggregateAndStoreCentroids(List(centroids), isByzantineRobust, tauPercentile)
     )
     this.asyncBuffer = buffer
@@ -103,12 +101,12 @@ export class AntibiogoFederated {
   }
 
   // Current state of centroids on the server
-  private centroids!: Centroids
+  private centroids!: msf.Centroids
 
   // model weights received from clients for a given task and round.
-  private asyncBuffer!: AsyncBuffer<Centroids>
+  private asyncBuffer!: AsyncBuffer<msf.Centroids>
   // informants for each task.
-  private asyncInformant!: AsyncInformant<Centroids>
+  private asyncInformant!: AsyncInformant<msf.Centroids>
   /**
    * Contains metadata used for training by clients for a given task and round.
    * Stored by task ID, round number and client ID.
@@ -189,7 +187,7 @@ export class AntibiogoFederated {
           throw new Error('invalid weights format')
         }
 
-        const centroids: Centroids = serialization.weights.decodeCentroids(rawWeights) // in this case weights is a SerializedCentroids object
+        const centroids: msf.Centroids = msf.serialization.weights.decodeCentroids(rawWeights) // in this case weights is a SerializedCentroids object
 
         console.log(
           'received centroids from client', clientId,
@@ -226,7 +224,7 @@ export class AntibiogoFederated {
 
         this.logsAppend(clientId, RequestType.GetAsyncRound, 0)
 
-        void serialization.weights.encodeCentroids(this.centroids).then((serializedWeights) => {
+        void msf.serialization.weights.encodeCentroids(this.centroids).then((serializedWeights) => {
           const msg: messages.latestServerRound = {
             type: messageTypes.latestServerRound,
             round: round,
@@ -293,7 +291,7 @@ export class AntibiogoFederated {
   }
 
   private async aggregateAndStoreCentroids (
-    centroids: List<Centroids>,
+    centroids: List<msf.Centroids>,
     byzantineRobustAggregator: boolean,
     tauPercentile: number
   ): Promise<void> {
@@ -329,7 +327,7 @@ export class AntibiogoFederated {
           count + counts.get(idx)!),
       this.centroids.counts)
 
-    const updatedCentroids = toEntries(new Centroids(
+    const updatedCentroids = toEntries(new msf.Centroids(
       averagedPositions,
       this.centroids.radius,
       knownCounts,

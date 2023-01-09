@@ -12,7 +12,7 @@ export class Tasks {
 
     this.ownRouter.get(`/${msf.antibiogo.taskID}`, (_, res) => {
       const centroids = centroid.readFromCsv(CONFIG.prototypicalPath)
-      serialization.weights.encodeCentroids(centroids)
+      msf.serialization.weights.encodeCentroids(centroids)
         .then((encoded) => res.send(encoded))
         .catch(console.error)
     })

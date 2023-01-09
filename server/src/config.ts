@@ -1,6 +1,6 @@
 import path from 'path'
 
-import { msf, Centroids } from 'epfl-antibiogo-lib'
+import { msf } from 'epfl-antibiogo-lib'
 
 export class Config {
   public readonly serverUrl: URL

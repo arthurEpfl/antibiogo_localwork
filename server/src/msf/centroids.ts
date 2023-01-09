@@ -1,12 +1,12 @@
 import fs from 'node:fs'
 import { List } from 'immutable'
 
-import { tf, WeightsContainer, Centroids } from 'epfl-antibiogo-lib'
+import { tf, WeightsContainer, msf } from 'epfl-antibiogo-lib'
 
 export type CentroidEntry = [tf.Tensor, number, number, string]
 
-export function fromEntries (entries: List<CentroidEntry>): Centroids {
-  return new Centroids(
+export function fromEntries (entries: List<CentroidEntry>): msf.Centroids {
+  return new msf.Centroids(
     new WeightsContainer(entries.map((e) => e[0])),
     entries.map((e) => e[1]).toArray(),
     entries.map((e) => e[2]).toArray(),
@@ -14,7 +14,7 @@ export function fromEntries (entries: List<CentroidEntry>): Centroids {
   )
 }
 
-export function toEntries (centroids: Centroids): List<CentroidEntry> {
+export function toEntries (centroids: msf.Centroids): List<CentroidEntry> {
   return List(centroids.positions.weights).zip(
     List(centroids.radius),
     List(centroids.counts),
@@ -22,7 +22,7 @@ export function toEntries (centroids: Centroids): List<CentroidEntry> {
   ) as List<CentroidEntry>
 }
 
-export function readFromCsv (path: string): Centroids {
+export function readFromCsv (path: string): msf.Centroids {
   if (!fs.existsSync(path)) {
     throw new Error('Prototypical model file is missing')
   }
@@ -36,7 +36,7 @@ export function readFromCsv (path: string): Centroids {
   return fromEntries(List(entries))
 }
 
-export function writeToCsv (path: string, centroids: Centroids): void {
+export function writeToCsv (path: string, centroids: msf.Centroids): void {
   const entries = toEntries(centroids)
   const data = entries.map(([p, r, c, l]) => {
     const centroidVector = (p.arraySync() as number[])
