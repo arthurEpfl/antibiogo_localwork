@@ -35,7 +35,18 @@ A last step consists in updating the server's prototypes with the aggregation st
 
 ### Running the server locally
 
+Install the lib's dependencies and build it
+
 ```
+cd discojs/
+npm ci
+npm run build:node
+```
+
+Install the server's dependencies and run it
+
+```
+cd ..
 cd server/
 npm ci
 npm start
