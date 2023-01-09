@@ -2,7 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 
 import HomeView from '../views/HomeView.vue'
 import AboutView from '../views/AboutView.vue'
-import AggregateView from '../views/AggregateView.vue'
+import ModelsView from '../views/ModelsView.vue'
 import HelpView from '../views/HelpView.vue'
 
 const routes = [
@@ -17,9 +17,9 @@ const routes = [
     component: AboutView
   },
   {
-    path: '/aggregate',
-    name: 'aggregate',
-    component: AggregateView
+    path: '/models',
+    name: 'models',
+    component: ModelsView
   },
   {
     path: '/help',

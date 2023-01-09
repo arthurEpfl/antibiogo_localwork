@@ -1,5 +1,9 @@
 <template>
-  <UnderlinedButton @click="router.push(props.route)" :active="props.route === route.fullPath" class="text-3xl">
+  <UnderlinedButton
+    @click="router.push(props.route)"
+    :active="props.route === route.fullPath"
+    class="text-3xl"
+  >
     <slot />
   </UnderlinedButton>
 </template>
