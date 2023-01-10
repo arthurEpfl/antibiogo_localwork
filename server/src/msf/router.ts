@@ -19,8 +19,6 @@ import messageTypes = client.messages.type
 import clientConnected = client.messages.type.clientConnected
 import { CONFIG } from '../config'
 
-const BUFFER_CAPACITY = 1 // We aggregate centroids directly
-
 enum RequestType {
   Connect,
   Disconnect,
@@ -56,11 +54,45 @@ export class AntibiogoFederated {
 
   private readonly UUIDRegexExp = /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/gi
 
+  private aggregationLock = false
+
   constructor (wsApplier: expressWs.Instance) {
     this.ownRouter = express.Router()
     wsApplier.applyTo(this.ownRouter)
 
     this.initTask()
+
+    this.ownRouter.get('/trigger-aggregation', async (_, res) => {
+      
+      if (this.asyncBuffer === undefined) {
+        throw new Error('asyncBuffer is undefined, task not initialized')
+      }
+
+      if (this.aggregationLock === true) {
+        res.status(503).send('Aggregation already in progress\n')
+        return
+      }
+
+
+      this.aggregationLock = true
+      try {
+        await this.asyncBuffer.updateWeights()
+      } catch (e) {
+        console.error(e)
+        
+        // release the lock if an error occurs
+        this.aggregationLock = false
+
+        res.status(500).send('Error while aggregating\n')
+        return
+      }
+      
+      res.status(200).send('Aggregation successful\n')
+
+
+
+      this.aggregationLock = false
+    })
 
     this.ownRouter.get('/', (_, res) => res.send(this.description + '\n'))
 
@@ -87,7 +119,6 @@ export class AntibiogoFederated {
 
     const buffer = new AsyncBuffer<msf.Centroids>(
       msf.antibiogo.taskID,
-      BUFFER_CAPACITY,
       async (centroids: Iterable<msf.Centroids>) =>
         await this.aggregateAndStoreCentroids(List(centroids), isByzantineRobust, tauPercentile)
     )
@@ -202,7 +233,8 @@ export class AntibiogoFederated {
           throw new Error('post weight to unknown task:\'antibiogo\'')
         }
 
-        void buffer.add(clientId, centroids, round)
+        buffer.add(clientId, centroids, round)
+        console.info('added centroids from client', clientId, 'to buffer, current buffer size:', buffer.buffer.size)
       } else if (msg.type === messageTypes.pullServerStatistics) {
         // Get latest round
         const statistics = this.asyncInformant.getAllStatistics()
