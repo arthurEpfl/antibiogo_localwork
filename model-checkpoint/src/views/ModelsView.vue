@@ -20,10 +20,30 @@
 </template>
 
 <script setup lang="ts">
+import axios from 'axios'
+
+import { useSettingsStore } from '@/stores/settings'
+import notify from '@/notify'
 import ContentCard from '@/components/ContentCard.vue'
 import CustomButton from '@/components/button/CustomButton.vue'
 
-function aggregate (): void {}
+const settingsStore = useSettingsStore()
+
+async function aggregate (): Promise<void> {
+  let response
+  try {
+    response = await axios.get(settingsStore.serverEndpoint.href)
+  } catch (e: any) {
+    notify.error(e)
+    return
+  }
+
+  if (response.status === 200) {
+    notify.success()
+  } else {
+    notify.error()
+  }
+}
 
 function discard (): void {}
 </script>
