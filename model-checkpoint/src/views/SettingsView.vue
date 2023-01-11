@@ -17,6 +17,9 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { List } from 'immutable'
+
+import type { msf } from 'epfl-antibiogo-lib'
 
 import { useSettingsStore } from '@/stores/settings'
 import notify from '@/notify'
@@ -39,5 +42,13 @@ async function confirm (): Promise<void> {
   } else {
     return notify.error('Please provide a valid endpoint')
   }
+}
+
+async function fetchClientContributions (): Promise<msf.Centroids> {
+  return undefined as any
+}
+
+async function fetchServerModel (): Promise<List<msf.Centroids>> {
+  return List()
 }
 </script>
