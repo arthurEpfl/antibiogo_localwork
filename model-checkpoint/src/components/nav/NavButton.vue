@@ -2,7 +2,7 @@
   <UnderlinedButton
     @click="router.push(props.route)"
     :active="props.route === route.fullPath"
-    class="text-3xl"
+    class="text-xl sm:text-2xl lg:text-3xl"
   >
     <slot />
   </UnderlinedButton>
@@ -11,7 +11,7 @@
 <script setup lang="ts">
 import { useRoute, useRouter } from 'vue-router'
 
-import UnderlinedButton from '../button/UnderlinedButton.vue'
+import UnderlinedButton from '@/components/button/UnderlinedButton.vue'
 
 export interface Props {
   route: string

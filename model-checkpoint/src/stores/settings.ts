@@ -6,8 +6,9 @@ import axios from 'axios'
 export const useSettingsStore = defineStore('settings', () => {
   const serverEndpoint = ref<URL>(defaultConfig.serverUrl)
 
-  async function editServerEndpoint (url: URL): Promise<boolean> {
+  async function editServerEndpoint (endpoint: string | URL): Promise<boolean> {
     let success = false
+    const url = typeof endpoint === 'string' ? new URL(endpoint) : endpoint
     try {
       success = (await axios.get(url.href)).status === 200
     // eslint-disable-next-line no-empty

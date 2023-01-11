@@ -3,7 +3,7 @@
   </header>
   <body>
     <Notifications position="bottom left" />
-    <div class="h-screen px-20 py-10 space-y-24 lg:space-y-32 bg-slate-100 overflow-y-auto">
+    <div class="h-screen px-20 py-10 space-y-24 lg:space-y-32 bg-zinc-100 overflow-y-auto">
       <div class="flex justify-center">
         <NavBar />
       </div>
