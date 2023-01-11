@@ -1,13 +1,12 @@
 <template>
   <nav class="flex flex-col md:flex-row flex-wrap gap-16 items-center justify-center">
-    <MSFLogo
-      :width="logoSize"
-      :height="logoSize"
+    <MSF
+      :size="150"
       @click="router.push('/')"
       class="hover:cursor-pointer"
     >
       Home
-    </MSFLogo>
+    </MSF>
     <div class="flex flex-col md:flex-row gap-6 md:gap-16">
       <NavButton
         v-for="button in buttons"
@@ -26,10 +25,9 @@ import { useRouter } from 'vue-router'
 import { routes } from '@/router'
 
 import NavButton from './NavButton.vue'
-import MSFLogo from '@/assets/img/MSFLogo.vue'
+import MSF from '@/assets/img/MSF.vue'
 
 const router = useRouter()
-const logoSize = 300
 
 const buttons = routes.map((r) => r.name).filter((r) => r !== 'home')
 </script>

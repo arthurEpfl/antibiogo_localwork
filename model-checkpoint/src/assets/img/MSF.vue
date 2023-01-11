@@ -1,11 +1,10 @@
 <template>
-  <img src="./MSF_logo.png" :width="props.width" :height="props.height">
+  <img src="./MSF_logo.png" :height="props.size" :width="2 * props.size">
 </template>
 
 <script setup lang="ts">
 export interface Props {
-  width: number
-  height: number
+  size: number
 }
 const props = defineProps<Props>()
 </script>

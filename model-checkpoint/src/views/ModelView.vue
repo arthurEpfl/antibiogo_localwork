@@ -28,7 +28,10 @@
 </template>
 
 <script setup lang="ts">
+import { List } from 'immutable'
 import axios from 'axios'
+
+import type { msf } from 'epfl-antibiogo-lib'
 
 import { useSettingsStore } from '@/stores/settings'
 import notify from '@/notify'
@@ -56,5 +59,13 @@ async function aggregate (): Promise<void> {
 
 function discard (): void {
   notify.success('Successfully discarded contributions')
+}
+
+async function fetchClientContributions (): Promise<msf.Centroids> {
+  return undefined as any
+}
+
+async function fetchServerModel (): Promise<List<msf.Centroids>> {
+  return List()
 }
 </script>
