@@ -94,6 +94,31 @@ export class AntibiogoFederated {
       this.aggregationLock = false
     })
 
+    this.ownRouter.get('/centroids', async (_, res) => {
+      
+      if (this.asyncBuffer === undefined) {
+        throw new Error('asyncBuffer is undefined, task not initialized')
+      }
+
+      const response = this.asyncBuffer.buffer.toArray().map(centroids => {
+        const clientId = centroids[0]
+        const centroid = centroids[1]
+        return {
+          "clientId": clientId,
+          "centroids": {
+            "positions": centroid.positions.weights[0].dataSync(),
+            "radius": centroid.radius,
+            "counts": centroid.counts,
+            "labels": centroid.labels
+          }
+        }
+      })
+      
+      res.contentType('application/json')
+      res.status(200).json(response)
+
+    })
+
     this.ownRouter.get('/', (_, res) => res.send(this.description + '\n'))
 
     this.ownRouter.ws(this.buildRoute(), (ws, req) => {
