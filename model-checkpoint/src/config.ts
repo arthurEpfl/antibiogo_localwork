@@ -5,7 +5,7 @@ export class Config {
     public readonly serverHost: string,
     public readonly serverPort: number
   ) {
-    const url = new URL(`https://${serverHost}`)
+    const url = new URL(`http://${serverHost}`)
     url.port = String(serverPort)
     this.serverUrl = url
   }

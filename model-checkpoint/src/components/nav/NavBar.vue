@@ -7,7 +7,7 @@
     >
       Home
     </MSF>
-    <div class="flex flex-col md:flex-row gap-6 md:gap-16">
+    <div class="flex flex-col md:flex-row gap-6 md:gap-16 items-center">
       <NavButton
         v-for="button in buttons"
         :key="button"

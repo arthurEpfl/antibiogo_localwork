@@ -37,15 +37,12 @@ import MSFLogo from '@/assets/img/MSFLogo.vue';
         </div>
       </template>
     </ContentCard>
-    <div class="flex flex-col gap-16 items-center mt-32">
+    <div class="flex flex-col gap-16 items-center mt-8">
       <h1 class="text-center text-3xl text-zinc-600 uppercase">
         A collaboration between
       </h1>
       <div class="flex flex-wrap gap-8 justify-center items-center">
         <MSF class="hover:cursor-pointer" @click="msfWebsite" :size="200" />
-        <span class="inline-block text-3xl text-zinc-600">
-          &
-        </span>
         <MLO class="hover:cursor-pointer group/mlo" @click="mloWebsite" :size="100" />
       </div>
     </div>
