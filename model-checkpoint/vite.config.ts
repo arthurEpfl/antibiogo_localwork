@@ -13,5 +13,13 @@ export default defineConfig({
   },
   server: {
     cors: true
+  },
+  optimizeDeps: {
+    include: ['epfl-antibiogo-lib'],
+  },
+  build: {
+    commonjsOptions: {
+      include: [/epfl-antibiogo-lib/, /node_modules/],
+    },
   }
 })
