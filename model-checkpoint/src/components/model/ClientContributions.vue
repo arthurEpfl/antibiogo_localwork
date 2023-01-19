@@ -4,19 +4,18 @@
       Client Contributions
     </template>
     <template #content>
-      <div class="flex flex-col items-center gap-8">
+      <div class="flex flex-col items-center gap-6">
         <CustomButton @click="updateClientContributions">
           Fetch Contributions
         </CustomButton>
-        <SlideButton @toggle="toggleContribStats">
-          <p class="grid grid-cols-2">
-            <span class="text-right">Showing&nbsp;</span>
-            <span class="text-left underline" v-if="showTotalContribStats">total amounts</span>
-            <span class="text-left underline" v-else>average per client</span>
-          </p>
-        </SlideButton>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-8 items-center">
-          <StatsRow :total="nbrTotalClients" unit="client" unit-plural="clients" per="client">
+          <span class="col-span-2 block h-0.5 bg-zinc-200 my-6 w-2/3 mx-auto" />
+          <StatsRow
+            :total="totalClients"
+            unit="client"
+            unit-plural="clients"
+            per="client"
+          >
             <template #text>
               Number of clients in this round.<br>Clients can contribute multiple times.
             </template>
@@ -24,8 +23,14 @@
               <PeopleIcon />
             </template>
           </StatsRow>
-          <StatsRow :total="nbrTotalContribs" :average="nbrAvgContribs" :showTotal="showTotalContribStats"
-            unit="contribution" unit-plural="contributions" per="client">
+          <span class="col-span-2 block h-0.5 bg-zinc-200 my-6 w-2/3 mx-auto" />
+          <StatsRow
+            :total="totalContribs"
+            :average="avgContribs"
+            unit="contribution"
+            unit-plural="contributions"
+            per="client"
+          >
             <template #text>
               Number of contributions in this round.<br>Clients can contribute multiple times.
             </template>
@@ -33,8 +38,15 @@
               <ModelIcon />
             </template>
           </StatsRow>
-          <StatsRow :total="nbrTotalNewCounts" :average="nbrAvgNewCounts" :showTotal="showTotalContribStats" unit="sample"
-            unit-plural="samples" per="contribution">
+          <span class="col-span-2 block h-0.5 bg-zinc-200 my-6 w-2/3 mx-auto" />
+          <StatsRow
+            :total="totalNewCounts"
+            :average="avgNewCounts"
+            :max-y="maxNewCounts"
+            unit="sample"
+            unit-plural="samples"
+            per="contribution"
+          >
             <template #text>
               Number of visited samples in this round.
             </template>
@@ -61,14 +73,12 @@ import { msf } from 'epfl-antibiogo-lib'
 import ContentCard from '@/components/ContentCard.vue'
 import CustomButton from '@/components/button/CustomButton.vue'
 import StatsRow from '@/components/StatsRow.vue'
-import SlideButton from '@/components/button/SlideButton.vue'
 
 import PeopleIcon from '@/assets/svg/PeopleIcon.vue'
 import ModelIcon from '@/assets/svg/ModelIcon.vue'
 
 const settingsStore = useSettingsStore()
 
-const showTotalContribStats = ref(true)
 const contributions = ref<List<msf.Centroids> | undefined>(await fetchClientContributions())
 
 async function fetchClientContributions(): Promise<List<msf.Centroids> | undefined> {
@@ -106,23 +116,19 @@ async function updateClientContributions(): Promise<void> {
   }
 }
 
-function toggleContribStats(): void {
-  showTotalContribStats.value = !showTotalContribStats.value
-}
+const totalClients = computed(() => contributions.value?.size ?? 0)
 
-// total number of contributors (clients)
-const nbrTotalClients = computed(() => contributions.value?.size ?? 0)
-// total number of contributions
-const nbrTotalContribs = computed(() => contributions.value?.size ?? 0)
-// average number of contributions per client
-const nbrAvgContribs = computed(() => nbrTotalContribs.value / Math.max(1, nbrTotalContribs.value))
-// total number of samples used by contributors
-const nbrTotalNewCounts = computed(() => contributions
+const totalContribs = computed(() => contributions.value?.size ?? 0)
+
+const avgContribs = computed(() => totalContribs.value / Math.max(1, totalContribs.value))
+
+const totalNewCounts = computed(() => contributions
   .value?.map((centroids) => centroids.counts
     // .map((count, idx) => count - (model.value?.counts[idx] ?? 0))
     .reduce((acc: number, count) => acc + count)
   ).reduce((acc: number, count) => acc + count) ?? 0)
-// average number of samples used by contributors
-const nbrAvgNewCounts = computed(() =>
-  nbrTotalNewCounts.value / Math.max(1, nbrTotalContribs.value))
+
+const avgNewCounts = computed(() => totalNewCounts.value / Math.max(1, totalContribs.value))
+
+const maxNewCounts = computed(() => List(contributions.value).map((c) => List(c.counts).max()).max() ?? 0)
 </script>

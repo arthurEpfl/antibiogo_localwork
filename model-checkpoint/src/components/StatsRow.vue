@@ -3,16 +3,25 @@
     <p class="p-4 bg-zinc-100 rounded-lg text-center">
       <slot name="text" />
     </p>
-    <div class="flex flex-col items-center">
-      <slot name="icon" />
-      <p class="text-4xl text-center space-x-4">
-        <span v-if="props.showTotal" class="flex items-center gap-2">
-          {{ formatNumber(props.total) }} <span class="text-sm">{{ displayUnit(props.total) }}</span>
-        </span>
-        <span v-else class="flex items-center gap-2">
-          {{ formatNumber(props.average) }} <span class="text-sm">{{ displayUnit(props.average) }} per {{ props.per }}</span>
-        </span>
-      </p>
+    <div class="grid grid-cols-2 items-center text-4xl gap-4">
+      <p class="text-right">{{ formatNumber(props.total) }}</p>
+      <p class="text-left text-sm">total {{ displayUnit(props.total) }}</p>
+      <div v-if="props.average !== undefined" class="contents">
+        <p class="text-right">{{ formatNumber(props.average) }}</p>
+        <p class="text-left text-sm">{{ displayUnit(props.average) }} per {{ props.per }}</p>
+      </div>
+      <div v-if="props.maxY !== undefined" class="contents">
+        <p class="text-right">{{ formatNumber(props.maxY) }}</p>
+        <p class="text-left text-sm">
+          {{ displayUnit(props.total) }} <span v-if="props.maxX" class="text-sm"> from {{ props.maxX }}</span>
+        </p>
+      </div>
+      <div v-if="props.minY !== undefined" class="contents">
+        <p class="text-right">{{ formatNumber(props.minY) }}</p>
+        <p class="text-left text-sm">
+          {{ displayUnit(props.total) }} <span v-if="props.minX" class="text-sm"> from {{ props.minX }}</span>
+        </p>
+      </div>
     </div>
   </div>
 </template>
@@ -25,11 +34,23 @@ const props = defineProps({
   },
   average: {
     type: Number,
-    default: 0
+    required: false
   },
-  showTotal: {
-    type: Boolean,
-    default: true
+  maxY: {
+    type: Number,
+    required: false
+  },
+  maxX: {
+    type: String,
+    required: false
+  },
+  minY: {
+    type: Number,
+    required: false
+  },
+  minX: {
+    type: String,
+    required: false
   },
   unit: {
     type: String,
