@@ -5,11 +5,11 @@
     </template>
     <template #content>
       <div class="flex flex-col items-center gap-6">
-        <CustomButton @click="updateClientContributions">
+        <CustomButton @click="emit('update')">
           Fetch Contributions
         </CustomButton>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-8 items-center">
-          <span class="col-span-2 block h-0.5 bg-zinc-200 my-6 w-2/3 mx-auto" />
+          <HorizontalLine class="col-span-2" />
           <StatsRow
             :total="totalClients"
             unit="client"
@@ -23,7 +23,7 @@
               <PeopleIcon />
             </template>
           </StatsRow>
-          <span class="col-span-2 block h-0.5 bg-zinc-200 my-6 w-2/3 mx-auto" />
+          <HorizontalLine class="col-span-2" />
           <StatsRow
             :total="totalContribs"
             :average="avgContribs"
@@ -38,11 +38,12 @@
               <ModelIcon />
             </template>
           </StatsRow>
-          <span class="col-span-2 block h-0.5 bg-zinc-200 my-6 w-2/3 mx-auto" />
+          <HorizontalLine class="col-span-2" />
           <StatsRow
             :total="totalNewCounts"
             :average="avgNewCounts"
             :max-y="maxNewCounts"
+            :max-x="maxNewCountsLabel"
             unit="sample"
             unit-plural="samples"
             per="contribution"
@@ -61,74 +62,51 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { List } from 'immutable'
-import axios from 'axios'
 
-import { useSettingsStore } from '@/stores/settings'
-import notify from '@/notify'
-
-import { msf } from 'epfl-antibiogo-lib'
+import type { msf } from 'epfl-antibiogo-lib'
 
 import ContentCard from '@/components/ContentCard.vue'
 import CustomButton from '@/components/button/CustomButton.vue'
 import StatsRow from '@/components/StatsRow.vue'
+import HorizontalLine from '@/components/HorizontalLine.vue'
 
 import PeopleIcon from '@/assets/svg/PeopleIcon.vue'
 import ModelIcon from '@/assets/svg/ModelIcon.vue'
 
-const settingsStore = useSettingsStore()
-
-const contributions = ref<List<msf.Centroids> | undefined>(await fetchClientContributions())
-
-async function fetchClientContributions(): Promise<List<msf.Centroids> | undefined> {
-  let response
-  try {
-    response = await axios.get(new URL('antibiogo/centroids', settingsStore.serverEndpoint).href)
-  } catch (e: any) {
-    notify.error(e)
-    return undefined
-  }
-
-  const raw = response.data
-  // TODO: check elements for isCentroids
-  if (!(Array.isArray(raw))) {
-    throw new Error()
-  }
-
-  let centroids
-  try {
-    // TODO: for lack of better type checking
-    centroids = List(raw).map((e) => msf.serialization.weights.decodeCentroids(e.centroids))
-  } catch (e: any) {
-    notify.error('Could not parse fetched contributions')
-    return
-  }
-
-  notify.success('Successfully fetched contributions')
-  return centroids
+export interface Props {
+  clientContributions: List<msf.Centroids> | undefined
 }
+const props = defineProps<Props>()
 
-async function updateClientContributions(): Promise<void> {
-  const fetchedContributions = await fetchClientContributions()
-  if (fetchedContributions !== undefined) {
-    contributions.value = fetchedContributions
-  }
+interface Emits {
+  (e: 'update'): void
 }
+const emit = defineEmits<Emits>()
 
-const totalClients = computed(() => contributions.value?.size ?? 0)
+const totalClients = computed(() => props.clientContributions?.size ?? 0)
 
-const totalContribs = computed(() => contributions.value?.size ?? 0)
+const totalContribs = computed(() => props.clientContributions?.size ?? 0)
 
 const avgContribs = computed(() => totalContribs.value / Math.max(1, totalContribs.value))
 
-const totalNewCounts = computed(() => contributions
-  .value?.map((centroids) => centroids.counts
+const totalNewCounts = computed(() => props.clientContributions
+  ?.map((centroids) => centroids.counts
     // .map((count, idx) => count - (model.value?.counts[idx] ?? 0))
     .reduce((acc: number, count) => acc + count)
   ).reduce((acc: number, count) => acc + count) ?? 0)
 
 const avgNewCounts = computed(() => totalNewCounts.value / Math.max(1, totalContribs.value))
 
-const maxNewCounts = computed(() => List(contributions.value).map((c) => List(c.counts).max()).max() ?? 0)
+const maxNewCounts = computed(() => props.clientContributions?.map((c) => List(c.counts).max()).max() ?? 0)
+
+const maxNewCountsLabel = computed(() => {
+  const [contributionIdx, idx] = props.clientContributions?.map((centroids, contributionIdx) =>
+    [contributionIdx, centroids.counts.indexOf(maxNewCounts.value)] as [number, number]).filter(([_, idx]) =>
+      idx !== -1).first() ?? [-1, -1]
+  return [contributionIdx, idx].includes(-1)
+    ? undefined
+    : props.clientContributions?.get(contributionIdx)?.labels[idx]
+})
 </script>

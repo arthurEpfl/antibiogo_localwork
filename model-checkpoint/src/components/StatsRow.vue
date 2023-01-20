@@ -8,18 +8,18 @@
       <p class="text-left text-sm">total {{ displayUnit(props.total) }}</p>
       <div v-if="props.average !== undefined" class="contents">
         <p class="text-right">{{ formatNumber(props.average) }}</p>
-        <p class="text-left text-sm">{{ displayUnit(props.average) }} per {{ props.per }}</p>
+        <p class="text-left text-sm">{{ displayUnit(props.average) }}<span v-if="props.per !== undefined"> per {{ props.per }}</span></p>
       </div>
       <div v-if="props.maxY !== undefined" class="contents">
         <p class="text-right">{{ formatNumber(props.maxY) }}</p>
         <p class="text-left text-sm">
-          {{ displayUnit(props.total) }} <span v-if="props.maxX" class="text-sm"> from {{ props.maxX }}</span>
+          {{ displayUnit(props.total) }} <span v-if="props.maxX" class="text-sm"> from {{ props.maxX.slice(0, LABEL_MAX_LENGTH) }}</span>
         </p>
       </div>
       <div v-if="props.minY !== undefined" class="contents">
         <p class="text-right">{{ formatNumber(props.minY) }}</p>
         <p class="text-left text-sm">
-          {{ displayUnit(props.total) }} <span v-if="props.minX" class="text-sm"> from {{ props.minX }}</span>
+          {{ displayUnit(props.total) }} <span v-if="props.minX" class="text-sm"> from {{ props.minX.slice(0, LABEL_MAX_LENGTH) }}</span>
         </p>
       </div>
     </div>
@@ -62,9 +62,11 @@ const props = defineProps({
   },
   per: {
     type: String,
-    required: true
+    required: false
   }
 })
+
+const LABEL_MAX_LENGTH = 6
 
 function formatNumber(nbr: number, decimals: number = 1) {
   let [integer, float] = nbr.toString().split('.')

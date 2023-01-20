@@ -5,11 +5,11 @@
     </template>
     <template #content>
       <div class="flex flex-col items-center gap-6">
-        <CustomButton @click="updateServerModel">
+        <CustomButton @click="emit('update')">
           Fetch Model
         </CustomButton>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-8 items-center">
-          <span class="col-span-2 block h-0.5 bg-zinc-200 my-6 w-2/3 mx-auto" />
+          <HorizontalLine class="col-span-2" />
           <StatsRow
             :total="totalCentroids"
             unit="centroid"
@@ -23,7 +23,7 @@
               <ModelIcon />
             </template>
           </StatsRow>
-          <span class="col-span-2 block h-0.5 bg-zinc-200 my-6 w-2/3 mx-auto" />
+          <HorizontalLine class="col-span-2" />
           <StatsRow
             :total="totalCounts"
             :average="avgCounts"
@@ -49,83 +49,56 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import axios from 'axios'
+import { computed } from 'vue'
+import { List } from 'immutable'
 
-import { msf } from 'epfl-antibiogo-lib'
-
-import { useSettingsStore } from '@/stores/settings'
-import notify from '@/notify'
+import type { msf } from 'epfl-antibiogo-lib'
 
 import ContentCard from '@/components/ContentCard.vue'
 import CustomButton from '@/components/button/CustomButton.vue'
 import StatsRow from '@/components/StatsRow.vue'
+import HorizontalLine from '@/components/HorizontalLine.vue'
 
 import PeopleIcon from '@/assets/svg/PeopleIcon.vue'
 import ModelIcon from '@/assets/svg/ModelIcon.vue'
-import { List } from 'immutable'
 
-const settingsStore = useSettingsStore()
-
-const model = ref<msf.Centroids | undefined>(await fetchServerModel())
-
-async function fetchServerModel(): Promise<msf.Centroids | undefined> {
-  let response
-  try {
-    response = await axios.get(new URL('tasks/antibiogo', settingsStore.serverEndpoint).href)
-  } catch (e: any) {
-    notify.error(e)
-    return undefined
-  }
-
-  const raw = response.data
-
-  let centroids
-  try {
-    // TODO: for lack of better type checking
-    centroids = msf.serialization.weights.decodeCentroids(raw)
-  } catch (e) {
-    notify.error('Could not parse fetched model')
-  }
-
-  notify.success('Successfully fetched model')
-  return centroids
+export interface Props {
+  serverModel: msf.Centroids | undefined
 }
+const props = defineProps<Props>()
 
-async function updateServerModel(): Promise<void> {
-  const fetchedModel = await fetchServerModel()
-  if (fetchedModel !== undefined) {
-    model.value = fetchedModel
-  }
+interface Emits {
+  (e: 'update'): void
 }
+const emit = defineEmits<Emits>()
 
-const totalCentroids = computed(() => model.value?.labels.length ?? 0)
+const totalCentroids = computed(() => props.serverModel?.labels.length ?? 0)
 
-const totalCounts = computed(() => model.value?.counts.reduce((acc: number, count) => acc + count) ?? 0)
+const totalCounts = computed(() => props.serverModel?.counts.reduce((acc: number, count) => acc + count) ?? 0)
 
 const avgCounts = computed(() => totalCounts.value / Math.max(1, totalCentroids.value))
 
-const maxCounts = computed(() => List(model.value?.counts).max())
+const maxCounts = computed(() => List(props.serverModel?.counts).max())
 
 const maxCountsLabel = computed(() => {
   if (maxCounts.value === undefined) {
     return undefined
   }
-  const idx = model.value?.counts.indexOf(maxCounts.value)
+  const idx = props.serverModel?.counts.indexOf(maxCounts.value)
   return idx !== -1 && idx !== undefined
-    ? model.value?.labels[idx]
+    ? props.serverModel?.labels[idx]
     : undefined
 })
 
 const minCounts = computed(() => 
-  List(model.value?.counts).min())
+  List(props.serverModel?.counts).min())
 const minCountsLabel = computed(() => {
   if (minCounts.value === undefined) {
     return undefined
   }
-  const idx = model.value?.counts.indexOf(minCounts.value)
+  const idx = props.serverModel?.counts.indexOf(minCounts.value)
   return idx !== -1 && idx !== undefined
-    ? model.value?.labels[idx]
+    ? props.serverModel?.labels[idx]
     : undefined
 })
 </script>

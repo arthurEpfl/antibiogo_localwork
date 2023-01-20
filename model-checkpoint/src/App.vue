@@ -6,7 +6,7 @@
     <div class="relative min-h-full bg-zinc-100">
       <div class="px-20 pt-10 pb-32 space-y-24 lg:space-y-32">
         <NavBar />
-        <main class="flex flex-col gap-16">
+        <main class="flex flex-col items-center gap-16">
           <Suspense class="contents">
             <RouterView />
           </Suspense>
