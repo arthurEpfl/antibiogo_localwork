@@ -98,7 +98,9 @@ async function fetchClientContributions(): Promise<List<msf.centroids.Centroids>
   }
 
   notify.success('Successfully fetched contributions')
-  return centroids.size > 0 ? centroids : undefined
+  return centroids.size > 0
+    ? centroids
+    : undefined
 }
 
 async function fetchServerModel(): Promise<msf.centroids.Centroids | undefined> {
@@ -122,8 +124,6 @@ async function fetchServerModel(): Promise<msf.centroids.Centroids | undefined> 
   }
 
   notify.success('Successfully fetched model')
-
-  // modelTensors = centroids.positions.weights
   return centroids
 }
 

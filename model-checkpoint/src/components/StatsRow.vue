@@ -27,6 +27,7 @@
 </template>
 
 <script setup lang="ts">
+import { formatNumber } from '@/utils'
 const props = defineProps({
   total: {
     type: Number,
@@ -67,19 +68,6 @@ const props = defineProps({
 })
 
 const LABEL_MAX_LENGTH = 6
-
-function formatNumber(nbr: number, decimals: number = 1) {
-  let [integer, float] = nbr.toString().split('.')
-  if (integer.length >= 5) {
-    integer = integer.replace(/(\d)(?=(\d{3})+$)/g, '$1 ')
-  }
-  if (float !== undefined) {
-    float = float.slice(0, decimals)
-    return [integer, float].join('.')
-  } else {
-    return integer
-  }
-}
 
 function displayUnit (amount: number): string {
   return amount <= 1 || props.unitPlural === undefined ? props.unit : props.unitPlural

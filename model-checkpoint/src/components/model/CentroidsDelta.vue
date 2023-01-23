@@ -10,36 +10,42 @@
         </h2>
         <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 items-center w-full">
           <div
-            v-for="label in labels"
+            v-for="([label, count]) in countsDelta"
             :key="label" class="contents space-x-4"
           >
-            <p class="text-right">{{ label }}</p><p>4</p>
+            <p class="text-right">{{ label }}</p><p>{{ count }}</p>
           </div>
         </div>
         <HorizontalLine />
         <h2 class="text-lg font-bold uppercase text-center">
           Centroid Positions
         </h2>
-        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 items-center w-full">
-          <div
+        <div class="grid grid-cols-1 lg:grid-cols-2 justify-items-center items-center w-full">
+          <p
             v-for="([label, distance], idx) in positionsDelta"
             :key="idx"
-            class="contents space-x-4"
           >
-            <span>{{ label }}</span><span>{{ distance }}</span>
-          </div>
+            <span class="text-sm">&Delta;Distance: </span>
+            <span class="text-lg">{{ label }} &#8594; {{ distance }}</span>
+          </p>
         </div>
         <HorizontalLine />
         <h2 class="text-lg font-bold uppercase text-center">
           New Labels
         </h2>
-        <div class="grid grid-col-2 md:grid-cols-3 lg:grid-cols-4 items-center w-full">
+        <div
+          v-if="newLabels.size > 0"
+          class="grid grid-col-2 md:grid-cols-3 lg:grid-cols-4 items-center w-full"
+        >
           <div
             v-for="(newLabel, idx) in newLabels"
             :key="idx"
           >
             {{ newLabel }}
           </div>
+        </div>
+        <div v-else>
+          No new label
         </div>
       </div>
     </template>
@@ -52,6 +58,8 @@ import { List, Map } from 'immutable'
 
 import { msf } from 'epfl-antibiogo-lib'
 
+
+import { formatNumber } from '@/utils'
 import ContentCard from '@/components/ContentCard.vue'
 import HorizontalLine from '@/components/HorizontalLine.vue'
 
@@ -61,11 +69,18 @@ export interface Props {
 }
 const props = defineProps<Props>()
 
-const labels = computed(() => List(props.model?.labels).sort())
-const newLabels = computed(() => [1, 2, 3])
+const countsDelta = computed(() => Map(List(props.model?.labels)
+  .zip(List(props.model?.counts), List(aggregated.value?.counts))
+  .map(([label, prev, curr]) => [label, curr - prev] as [string, number])
+  .filter(([_, count]) => count > 0)))
+
+const newLabels = computed(() => List())
+
 const positionsDelta = computed(() => Map(List(props.model?.positions.weights)
-  .zip(List(aggregated.value?.positions.weights), List(props.model?.labels))
-  .map(([prev, curr, label]) => [label, Math.sqrt(prev.sub(curr).norm().dataSync()[0])] as [string, number])))
+.zip(List(aggregated.value?.positions.weights), List(props.model?.labels))
+.map(([prev, curr, label]) => [label, Math.sqrt(prev.sub(curr).norm().dataSync()[0])] as [string, number])
+.filter(([_, distance]) => distance > 0)
+.map(([label, distance]) => [label, formatNumber(distance, 8)])))
 
 // only executed client-side for visualization purposes
 const aggregated = computed(() => 
