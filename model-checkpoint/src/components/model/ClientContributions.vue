@@ -76,7 +76,7 @@ import PeopleIcon from '@/assets/svg/PeopleIcon.vue'
 import ModelIcon from '@/assets/svg/ModelIcon.vue'
 
 export interface Props {
-  clientContributions: List<msf.Centroids> | undefined
+  contributions: List<msf.centroids.Centroids> | undefined
 }
 const props = defineProps<Props>()
 
@@ -85,13 +85,13 @@ interface Emits {
 }
 const emit = defineEmits<Emits>()
 
-const totalClients = computed(() => props.clientContributions?.size ?? 0)
+const totalClients = computed(() => props.contributions?.size ?? 0)
 
-const totalContribs = computed(() => props.clientContributions?.size ?? 0)
+const totalContribs = computed(() => props.contributions?.size ?? 0)
 
 const avgContribs = computed(() => totalContribs.value / Math.max(1, totalContribs.value))
 
-const totalNewCounts = computed(() => props.clientContributions
+const totalNewCounts = computed(() => props.contributions
   ?.map((centroids) => centroids.counts
     // .map((count, idx) => count - (model.value?.counts[idx] ?? 0))
     .reduce((acc: number, count) => acc + count)
@@ -99,14 +99,14 @@ const totalNewCounts = computed(() => props.clientContributions
 
 const avgNewCounts = computed(() => totalNewCounts.value / Math.max(1, totalContribs.value))
 
-const maxNewCounts = computed(() => props.clientContributions?.map((c) => List(c.counts).max()).max() ?? 0)
+const maxNewCounts = computed(() => props.contributions?.map((c) => List(c.counts).max()).max() ?? 0)
 
 const maxNewCountsLabel = computed(() => {
-  const [contributionIdx, idx] = props.clientContributions?.map((centroids, contributionIdx) =>
+  const [contributionIdx, idx] = props.contributions?.map((centroids, contributionIdx) =>
     [contributionIdx, centroids.counts.indexOf(maxNewCounts.value)] as [number, number]).filter(([_, idx]) =>
       idx !== -1).first() ?? [-1, -1]
   return [contributionIdx, idx].includes(-1)
     ? undefined
-    : props.clientContributions?.get(contributionIdx)?.labels[idx]
+    : props.contributions?.get(contributionIdx)?.labels[idx]
 })
 </script>

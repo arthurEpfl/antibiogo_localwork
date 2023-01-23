@@ -9,7 +9,7 @@
             <p class="text-red-500 font-bold">Discarding the client contributions is not reversible as of yet</p>
             <p>Aggregating the contributions will effectively update the model, whereas discarding them will leave the model as is</p>
           </div>
-          <div class="grid grid-cols-2 gap-16">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-16">
             <CustomButton @click="aggregate">Aggregate</CustomButton>
             <CustomButton @click="discard">Discard</CustomButton>
           </div>
@@ -17,31 +17,28 @@
       </template>
     </ContentCard>
     <ServerModel
-      :server-model="(model as msf.Centroids)"
+      :model="model"
       @update="updateServerModel"
     />
     <ClientContributions
-      :client-contributions="contributions"
+      :contributions="contributions"
       @update="updateClientContributions"
     />
     <CentroidsDelta
-      :server-model="(model as msf.Centroids)"
-      :server-model-weights="modelWeights"
-      :client-contributions="contributions"
-      :client-contributions-weights="contributionsWeights"
+      :model="model"
+      :contributions="contributions"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { shallowRef } from 'vue'
 import { List } from 'immutable'
 import axios from 'axios'
 
-import { msf } from 'epfl-antibiogo-lib'
+import { msf, serialization } from 'epfl-antibiogo-lib'
 
 import { useSettingsStore } from '@/stores/settings'
-import type { Weights } from '@/types'
 import notify from '@/notify'
 
 import ServerModel from '@/components/model/ServerModel.vue'
@@ -73,15 +70,10 @@ function discard (): void {
   notify.error('Not implemented')
 }
 
-const model = ref<msf.Centroids | undefined>()
-const modelWeights = ref<Weights | undefined>()
-const contributions = ref<List<msf.Centroids> | undefined>()
-const contributionsWeights = ref<List<Weights> | undefined>()
+const model = shallowRef<msf.centroids.Centroids | undefined>(await fetchServerModel())
+const contributions = shallowRef<List<msf.centroids.Centroids> | undefined>(await fetchClientContributions())
 
-await updateServerModel()
-await updateClientContributions()
-
-async function fetchClientContributions(): Promise<[List<msf.Centroids>, List<Weights>] | undefined> {
+async function fetchClientContributions(): Promise<List<msf.centroids.Centroids> | undefined> {
   let response
   try {
     response = await axios.get(new URL('antibiogo/centroids', settingsStore.serverEndpoint).href)
@@ -91,34 +83,25 @@ async function fetchClientContributions(): Promise<[List<msf.Centroids>, List<We
   }
 
   const raw = response.data
-  // TODO: check elements for isCentroids
-  if (!(Array.isArray(raw))) {
-    throw new Error()
+
+  if (!(Array.isArray(raw) && raw.every((e) => serialization.weights.isEncoded(e)))) {
+    notify.error('Could not parse fetched contributions')
+    return undefined
   }
 
-  let centroids
+  let centroids: List<msf.centroids.Centroids>
   try {
-    // TODO: for lack of better type checking
-    centroids = List(raw).map((e) => msf.serialization.weights.decodeCentroids(e.centroids))
+    centroids = List(raw).map((e) => msf.serialization.weights.decodeCentroids(e))
   } catch (e: any) {
     notify.error('Could not parse fetched contributions')
     return
   }
 
-  const weights = centroids.map((c) => List(c.positions.weights.map((t) => List(t.arraySync() as number[]))))
-
   notify.success('Successfully fetched contributions')
-  return [centroids, weights]
+  return centroids.size > 0 ? centroids : undefined
 }
 
-async function updateClientContributions(): Promise<void> {
-  const fetchedContributions = await fetchClientContributions()
-  if (fetchedContributions !== undefined) {
-    [contributions.value, contributionsWeights.value] = fetchedContributions
-  }
-}
-
-async function fetchServerModel(): Promise<[msf.Centroids, Weights] | undefined> {
+async function fetchServerModel(): Promise<msf.centroids.Centroids | undefined> {
   let response
   try {
     response = await axios.get(new URL('tasks/antibiogo', settingsStore.serverEndpoint).href)
@@ -138,16 +121,23 @@ async function fetchServerModel(): Promise<[msf.Centroids, Weights] | undefined>
     return undefined
   }
 
-  const weights = List(centroids.positions.weights.map((t) => List(t.arraySync() as number[])))
-
   notify.success('Successfully fetched model')
-  return [centroids, weights]
+
+  // modelTensors = centroids.positions.weights
+  return centroids
 }
 
-async function updateServerModel(): Promise<void> {
+async function updateClientContributions (): Promise<void> {
+  const fetchedContributions = await fetchClientContributions()
+  if (fetchedContributions !== undefined) {
+    contributions.value = fetchedContributions
+  }
+}
+
+async function updateServerModel (): Promise<void> {
   const fetchedModel = await fetchServerModel()
   if (fetchedModel !== undefined) {
-    [model.value, modelWeights.value] = fetchedModel
+    model.value = fetchedModel
   }
 }
 </script>

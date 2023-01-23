@@ -63,7 +63,7 @@ import PeopleIcon from '@/assets/svg/PeopleIcon.vue'
 import ModelIcon from '@/assets/svg/ModelIcon.vue'
 
 export interface Props {
-  serverModel: msf.Centroids | undefined
+  model: msf.centroids.Centroids | undefined
 }
 const props = defineProps<Props>()
 
@@ -72,33 +72,33 @@ interface Emits {
 }
 const emit = defineEmits<Emits>()
 
-const totalCentroids = computed(() => props.serverModel?.labels.length ?? 0)
+const totalCentroids = computed(() => props.model?.labels.length ?? 0)
 
-const totalCounts = computed(() => props.serverModel?.counts.reduce((acc: number, count) => acc + count) ?? 0)
+const totalCounts = computed(() => props.model?.counts.reduce((acc: number, count) => acc + count) ?? 0)
 
 const avgCounts = computed(() => totalCounts.value / Math.max(1, totalCentroids.value))
 
-const maxCounts = computed(() => List(props.serverModel?.counts).max())
+const maxCounts = computed(() => List(props.model?.counts).max())
 
 const maxCountsLabel = computed(() => {
   if (maxCounts.value === undefined) {
     return undefined
   }
-  const idx = props.serverModel?.counts.indexOf(maxCounts.value)
+  const idx = props.model?.counts.indexOf(maxCounts.value)
   return idx !== -1 && idx !== undefined
-    ? props.serverModel?.labels[idx]
+    ? props.model?.labels[idx]
     : undefined
 })
 
 const minCounts = computed(() => 
-  List(props.serverModel?.counts).min())
+  List(props.model?.counts).min())
 const minCountsLabel = computed(() => {
   if (minCounts.value === undefined) {
     return undefined
   }
-  const idx = props.serverModel?.counts.indexOf(minCounts.value)
+  const idx = props.model?.counts.indexOf(minCounts.value)
   return idx !== -1 && idx !== undefined
-    ? props.serverModel?.labels[idx]
+    ? props.model?.labels[idx]
     : undefined
 })
 </script>
