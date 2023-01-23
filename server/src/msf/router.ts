@@ -134,7 +134,7 @@ export class AntibiogoFederated {
     const buffer = new AsyncBuffer<msf.centroids.Centroids>(
       msf.antibiogo.taskID,
       async (centroids: Iterable<msf.centroids.Centroids>) =>
-        await this.aggregateAndStoreCentroids(List(centroids), isByzantineRobust, tauPercentile)
+        this.aggregateAndStoreCentroids(List(centroids), tauPercentile)
     )
     this.asyncBuffer = buffer
 
@@ -232,7 +232,8 @@ export class AntibiogoFederated {
           throw new Error('invalid weights format')
         }
 
-        const centroids: msf.centroids.Centroids = msf.serialization.weights.decodeCentroids(rawWeights) // in this case weights is a SerializedCentroids object
+        // in this case weights is a SerializedCentroids object
+        const centroids: msf.centroids.Centroids = msf.serialization.weights.decodeCentroids(rawWeights)
 
         console.log(
           'received centroids from client', clientId,
@@ -274,7 +275,8 @@ export class AntibiogoFederated {
           const msg: messages.latestServerRound = {
             type: messageTypes.latestServerRound,
             round: round,
-            weights: serializedWeights // in this case weights is a SerializedCentroids object
+            // in this case weights is a SerializedCentroids object
+            weights: serializedWeights
           }
 
           ws.send(msgpack.encode(msg))
