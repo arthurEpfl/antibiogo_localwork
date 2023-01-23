@@ -13,7 +13,7 @@ import {
   msf
 } from 'epfl-antibiogo-lib'
 
-import { CentroidEntry, readFromCsv, writeToCsv, fromEntries, toEntries } from './centroids'
+import { readFromCsv, writeToCsv } from './centroids'
 import messages = client.federated.messages
 import messageTypes = client.messages.type
 import clientConnected = client.messages.type.clientConnected
@@ -62,63 +62,8 @@ export class AntibiogoFederated {
 
     this.initTask()
 
-    this.ownRouter.get('/trigger-aggregation', async (_, res) => {
-      
-      if (this.asyncBuffer === undefined) {
-        throw new Error('asyncBuffer is undefined, task not initialized')
-      }
-
-      if (this.aggregationLock === true) {
-        res.status(503).send('Aggregation already in progress\n')
-        return
-      }
-
-
-      this.aggregationLock = true
-      try {
-        await this.asyncBuffer.updateWeights()
-      } catch (e) {
-        console.error(e)
-        
-        // release the lock if an error occurs
-        this.aggregationLock = false
-
-        res.status(500).send('Error while aggregating\n')
-        return
-      }
-      
-      res.status(200).send('Aggregation successful\n')
-
-
-
-      this.aggregationLock = false
-    })
-
-    this.ownRouter.get('/centroids', async (_, res) => {
-      
-      if (this.asyncBuffer === undefined) {
-        throw new Error('asyncBuffer is undefined, task not initialized')
-      }
-
-      const response = this.asyncBuffer.buffer.toArray().map(centroids => {
-        const clientId = centroids[0]
-        const centroid = centroids[1]
-        return {
-          "clientId": clientId,
-          "centroids": {
-            "positions": centroid.positions.weights[0].dataSync(),
-            "radius": centroid.radius,
-            "counts": centroid.counts,
-            "labels": centroid.labels
-          }
-        }
-      })
-      
-      res.contentType('application/json')
-      res.status(200).json(response)
-
-    })
-
+    this.ownRouter.get('/trigger-aggregation', async (req, res) => await this.aggregateCentroids(req, res))
+    this.ownRouter.get('/centroids', (req, res) => this.getClientContributions(req, res))
     this.ownRouter.get('/', (_, res) => res.send(this.description + '\n'))
 
     this.ownRouter.ws(this.buildRoute(), (ws, req) => {
@@ -129,6 +74,50 @@ export class AntibiogoFederated {
         ws.close()
       }
     })
+  }
+
+  private async aggregateCentroids (request: express.Request, response: express.Response): Promise<void> {
+    if (this.asyncBuffer === undefined) {
+      throw new Error('asyncBuffer is undefined, task not initialized')
+    }
+
+    if (this.aggregationLock === true) {
+      response.status(503).send('Aggregation already in progress\n')
+      return
+    }
+
+    this.aggregationLock = true
+    try {
+      await this.asyncBuffer.updateWeights()
+    } catch (e) {
+      console.error(e)
+
+      // release the lock if an error occurs
+      this.aggregationLock = false
+
+      response.status(500).send('Error while aggregating\n')
+      return
+    }
+
+    response.status(200).send('Aggregation successful\n')
+
+    this.aggregationLock = false
+  }
+
+  private async getClientContributions (request: express.Request, response: express.Response): Promise<void> {
+    if (this.asyncBuffer === undefined) {
+      throw new Error('asyncBuffer is undefined, task not initialized')
+    }
+
+    const data = await Promise.all(
+      this.asyncBuffer.buffer
+        .toArray()
+        .map(async ([_, centroid]) =>
+          await msf.serialization.weights.encodeCentroids(centroid)
+    ))
+
+    response.contentType('application/json')
+    response.status(200).json(data)
   }
 
   protected initTask (): void {
@@ -142,9 +131,9 @@ export class AntibiogoFederated {
     const isByzantineRobust: boolean = msf.antibiogo.trainingInformation?.byzantineRobustAggregator ?? false
     const tauPercentile: number = msf.antibiogo.trainingInformation?.tauPercentile ?? 0
 
-    const buffer = new AsyncBuffer<msf.Centroids>(
+    const buffer = new AsyncBuffer<msf.centroids.Centroids>(
       msf.antibiogo.taskID,
-      async (centroids: Iterable<msf.Centroids>) =>
+      async (centroids: Iterable<msf.centroids.Centroids>) =>
         await this.aggregateAndStoreCentroids(List(centroids), isByzantineRobust, tauPercentile)
     )
     this.asyncBuffer = buffer
@@ -157,12 +146,12 @@ export class AntibiogoFederated {
   }
 
   // Current state of centroids on the server
-  private centroids!: msf.Centroids
+  private centroids!: msf.centroids.Centroids
 
   // model weights received from clients for a given task and round.
-  private asyncBuffer!: AsyncBuffer<msf.Centroids>
+  private asyncBuffer!: AsyncBuffer<msf.centroids.Centroids>
   // informants for each task.
-  private asyncInformant!: AsyncInformant<msf.Centroids>
+  private asyncInformant!: AsyncInformant<msf.centroids.Centroids>
   /**
    * Contains metadata used for training by clients for a given task and round.
    * Stored by task ID, round number and client ID.
@@ -243,7 +232,7 @@ export class AntibiogoFederated {
           throw new Error('invalid weights format')
         }
 
-        const centroids: msf.Centroids = msf.serialization.weights.decodeCentroids(rawWeights) // in this case weights is a SerializedCentroids object
+        const centroids: msf.centroids.Centroids = msf.serialization.weights.decodeCentroids(rawWeights) // in this case weights is a SerializedCentroids object
 
         console.log(
           'received centroids from client', clientId,
@@ -347,77 +336,15 @@ export class AntibiogoFederated {
     })
   }
 
-  private async aggregateAndStoreCentroids (
-    centroids: List<msf.Centroids>,
-    byzantineRobustAggregator: boolean,
-    tauPercentile: number
-  ): Promise<void> {
-    if (!centroids.every((centroid) =>
-      centroid.positions.weights[0].shape[0] === this.centroids.positions.weights[0].shape[0])) {
-      throw new Error('Centroid positions shape mismatch')
-    }
-    if (!centroids.every((centroid) => centroid.counts.length >= this.centroids.counts.length)) {
-      throw new Error('Centroids counts length mismatch')
-    }
-
-    // Handle updated centroids with known labels
-    const knownCentroids = centroids
-      .map((clientCentroids) => toEntries(clientCentroids)
-        .take(this.centroids.labels.length))
-      .filter((es) => es
-        .zip(List(this.centroids.labels))
-        .every(([e, l]) => e[3] === l))
-
-    const knownPositions = knownCentroids.map((clientCentroids) =>
-      clientCentroids.map((e) => e[0]))
-
-    const averagedPositions = byzantineRobustAggregator && tauPercentile > 0 && tauPercentile < 1
-      ? aggregation.avgClippingWeights(knownPositions, this.centroids.positions, tauPercentile)
-      : aggregation.avg(knownPositions)
-
-    const knownCounts = knownCentroids.map((clientCentroids) =>
-      clientCentroids.map((e, idx) =>
-        e[2] - this.centroids.counts[idx]))
-      .reduce((acc: number[], counts) =>
-        acc.map((count, idx) =>
-          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-          count + counts.get(idx)!),
-      this.centroids.counts)
-
-    const updatedCentroids = toEntries(new msf.Centroids(
-      averagedPositions,
-      this.centroids.radius,
-      knownCounts,
-      this.centroids.labels
-    ))
-
-    // Handle new labels
-    const unknownCentroids = centroids
-      .map((clientCentroids) => toEntries(clientCentroids)
-        .slice(this.centroids.labels.length))
-      .filter((e) => e.size > 0)
-
-    if (unknownCentroids.size === 0) {
-      // Reorder everything by label and update model
-      this.centroids = fromEntries(updatedCentroids)
-    } else {
-      const perLabel = unknownCentroids.flatMap((e) => e).groupBy((e) => e[3])
-      const newCentroids = perLabel
-        .map((es) => {
-          const [p, r, c, l]: CentroidEntry = es.reduce((acc: CentroidEntry, e) => [
-            acc[0].add(e[0]),
-            acc[1] + e[1],
-            acc[2] + e[2],
-            acc[3]
-          ])
-          const size = es.count()
-          return [p.div(size), r / size, c, l] as CentroidEntry
-        })
-        .toList()
-
-      // Reorder everything by label and update model
-      this.centroids = fromEntries(updatedCentroids.concat(newCentroids).sortBy((e) => e[3]))
-    }
+  private aggregateAndStoreCentroids (
+    centroids: List<msf.centroids.Centroids>,
+    tauPercentile?: number
+  ): void {
+    this.centroids = msf.centroids.aggregateCentroids(
+      this.centroids,
+      centroids,
+      tauPercentile
+    )
 
     // Save to local file system
     writeToCsv(CONFIG.prototypicalPath, this.centroids)
