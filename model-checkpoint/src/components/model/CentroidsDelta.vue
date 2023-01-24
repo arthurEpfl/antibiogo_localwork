@@ -3,7 +3,7 @@
     <template #title>
       Centroids Delta
     </template>
-    <template #content v-if="model !== undefined">
+    <template #content v-if="model !== undefined && contributions !== undefined">
       <div class="flex flex-col items-center gap-6">
         <h2 class="text-lg font-bold uppercase text-center">
           Sample Counts
@@ -49,6 +49,11 @@
         </div>
       </div>
     </template>
+    <template #content v-else>
+      <p class="text-center">
+        Could not fetch the server model and client contributions.
+      </p>
+    </template>
   </ContentCard>
 </template>
 
@@ -57,7 +62,6 @@ import { computed, } from 'vue'
 import { List, Map } from 'immutable'
 
 import { msf } from 'epfl-antibiogo-lib'
-
 
 import { formatNumber } from '@/utils'
 import ContentCard from '@/components/ContentCard.vue'

@@ -1,5 +1,9 @@
 <template>
-  <img src="./MSF_logo.png" :height="props.size" :width="2 * props.size">
+  <img
+    src="https://storage.googleapis.com/deai-313515.appspot.com/logos/MSF_logo.png"
+    :height="props.size"
+    :width="2 * props.size"
+  >
 </template>
 
 <script setup lang="ts">

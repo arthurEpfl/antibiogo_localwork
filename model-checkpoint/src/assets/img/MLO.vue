@@ -1,5 +1,9 @@
 <template>
-  <img src="./MLO_logo.png" :height="props.size" :width="4 * props.size">
+  <img
+    src="https://storage.googleapis.com/deai-313515.appspot.com/logos/MLO_logo.png"
+    :height="props.size"
+    :width="4 * props.size"
+  >
 </template>
 
 <script setup lang="ts">
