@@ -29,7 +29,7 @@ export class Router {
     )
 
     this.ownRouter.get('/', (_, res, next) => {
-      res.send('Server for DeAI & FeAI \n')
+      res.send('Antibiogo Server\n')
       next()
     })
     this.ownRouter.use('/antibiogo', antibiogo.router)
