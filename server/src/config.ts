@@ -1,6 +1,6 @@
 import path from 'path'
 
-import { antibiogo } from '../../discojs/src/msf/task.js'
+import { antibiogo } from '../../dicojs_mod/src/msf/task.js'
 
 export class Config {
   public readonly serverUrl: URL
@@ -35,6 +35,6 @@ const ROOT_DIR = path.join(__dirname, '..', '..', '..');
 export const CONFIG = new Config(
   8080,
   'file://',
-  path.join(ROOT_DIR, 'server', 'models', antibiogo.id, 'model.csv'),
+  path.join(ROOT_DIR, 'server', 'models', antibiogo.taskID, 'model.csv'),
   'https://storage.googleapis.com/deai-313515.appspot.com/models/model.csv'
 )

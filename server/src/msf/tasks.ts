@@ -2,9 +2,9 @@ import express from 'express'
 
 import { CONFIG } from '../config.js'
 
-import { antibiogo } from '../../../discojs/src/msf/task.js'
+import { antibiogo } from '../../../dicojs_mod/src/msf/task.js'
 
-import { encodeCentroids, decodeCentroids } from '../../../discojs/src/msf/serialization/weights.js'
+import { encodeCentroids, decodeCentroids } from '../../../dicojs_mod/src/msf/serialization/weights.js'
 
 import { readFromCsv } from './centroids.js'
 
@@ -34,7 +34,7 @@ export class Tasks {
   constructor() {
     this.ownRouter = express.Router();
 
-    this.ownRouter.get(`/${antibiogo.id}`, async (_, res) => {
+    this.ownRouter.get(`/${antibiogo.taskID}`, async (_, res) => {
       try {
         const centroids = readFromCsv(CONFIG.prototypicalPath);
         console.log('Original Centroids:', centroids);

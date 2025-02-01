@@ -5,16 +5,16 @@ import { List, Map, Set } from 'immutable'
 // import expressWs = require('express-ws')
 import expressWs from 'express-ws';
 
-import { AsyncInformant } from '../../../discojs/src/core/async_informant.js'
-import { TaskID } from '../../../discojs/src/core/task/task.js'
-import { AsyncBuffer } from '../../../discojs/src/core/async_buffer.js'
-import { encodeCentroids, decodeCentroids } from '../../../discojs/src/msf/serialization/weights.js'
-import { antibiogo } from '../../../discojs/src/msf/task.js'
-import { aggregateCentroids} from '../../../discojs/src/msf/weights/aggregation.js'
-import { Centroids } from '../../../discojs/src/msf/weights/centroids.js'
+import { AsyncInformant } from '../../../dicojs_mod/src/core/async_informant.js'
+import { TaskID } from '../../../dicojs_mod/src/core/task/task.js'
+import { AsyncBuffer } from '../../../dicojs_mod/src/core/async_buffer.js'
+import { encodeCentroids, decodeCentroids } from '../../../dicojs_mod/src/msf/serialization/weights.js'
+import { antibiogo } from '../../../dicojs_mod/src/msf/task.js'
+import { aggregateCentroids} from '../../../dicojs_mod/src/msf/weights/aggregation.js'
+import { Centroids } from '../../../dicojs_mod/src/msf/weights/centroids.js'
 
-import { messageGeneral, pullServerStatistics } from '../../../discojs/src/core/client/federated/messages.js'
-import { type } from '../../../discojs/src/core/client/messages.js'
+import { messageGeneral, pullServerStatistics } from '../../../dicojs_mod/src/core/client/federated/messages.js'
+import { type } from '../../../dicojs_mod/src/core/client/messages.js'
 
 import { readFromCsv, writeToCsv } from './centroids.js'
 // import messages = client.federated.messages
@@ -175,7 +175,7 @@ export class AntibiogoFederated {
   }
 
   protected initTask (): void {
-    this.tasksStatus = this.tasksStatus.set(antibiogo.id, {
+    this.tasksStatus = this.tasksStatus.set(antibiogo.taskID, {
       isRoundPending: false,
       round: 0
     })
@@ -196,7 +196,7 @@ export class AntibiogoFederated {
     console.log('Initializing task with tauPercentile cahnged:', tauPercentile);
 
     const buffer = new AsyncBuffer<Centroids>(
-      antibiogo.id,
+      antibiogo.taskID,
       async (centroids: Iterable<Centroids>) =>
         this.aggregateAndStoreCentroids(List(centroids), tauPercentile)
     )
@@ -376,7 +376,7 @@ export class AntibiogoFederated {
 
     this.logs = this.logs.push({
       timestamp: new Date(),
-      task: antibiogo.id,
+      task: antibiogo.taskID,
       round,
       client: clientId,
       request: type

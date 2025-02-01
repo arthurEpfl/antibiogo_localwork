@@ -101,7 +101,7 @@ import { List } from 'immutable';
 import * as tf from '@tensorflow/tfjs'
 import { TensorLike, WeightsContainer } from './weights_container.js';
 
-export { aggregation } from '@epfml/discojs'
+// export { aggregation } from '@epfml/discojs'
 
 type WeightsLike = Iterable<TensorLike>;
 
@@ -140,15 +140,19 @@ function parseWeights(weights: Iterable<WeightsLike | WeightsContainer>): List<W
   }
 }
 
-// function centerWeights(weights: Iterable<WeightsLike | WeightsContainer>, currentModel: WeightsContainer): List<WeightsContainer> {
-//   try {
-//     // Inverse substraction to avoid negative when adding 0's in contributions
-//     return parseWeights(weights).map(model => model.mapWith(currentModel, (a,b) => tf.sub(b, a)));
-//   } catch (error) {
-//     console.error('Error in centerWeights:', error);
-//     throw error;
-//   }
-// }
+function centerWeights(weights: Iterable<WeightsLike | WeightsContainer>, currentModel: WeightsContainer): List<WeightsContainer> {
+  try {
+    // Inverse substraction to avoid negative when adding 0's in contributions
+    return parseWeights(weights).map(model => model.mapWith(currentModel, (a,b) => tf.sub(b, a)));
+  } catch (error) {
+    console.error('Error in centerWeights:', error);
+    throw error;
+  }
+}
+
+function clipWeights (modelList: List<WeightsContainer>, normArray: number[], tau: number): List<WeightsContainer> {
+  return modelList.map(weights => weights.map((w, i) => tf.prod(w, Math.min(1, tau / (normArray[i])))))
+}
 
 // function clipWeights(modelList: List<WeightsContainer>, normArray: number[], tau: number): List<WeightsContainer> {
 //   try {
@@ -201,22 +205,22 @@ function parseWeights(weights: Iterable<WeightsLike | WeightsContainer>): List<W
 //   }
 // }
 
-// function computeQuantile(array: number[], q: number): number {
-//   try {
-//     const sorted = array.sort((a, b) => a - b);
-//     const pos = (sorted.length - 1) * q;
-//     const base = Math.floor(pos);
-//     const rest = pos - base;
-//     if (sorted[base + 1] !== undefined) {
-//       return sorted[base] + rest * (sorted[base + 1] - sorted[base]);
-//     } else {
-//       return sorted[base];
-//     }
-//   } catch (error) {
-//     console.error('Error in computeQuantile:', error);
-//     throw error;
-//   }
-// }
+function computeQuantile(array: number[], q: number): number {
+  try {
+    const sorted = array.sort((a, b) => a - b);
+    const pos = (sorted.length - 1) * q;
+    const base = Math.floor(pos);
+    const rest = pos - base;
+    if (sorted[base + 1] !== undefined) {
+      return sorted[base] + rest * (sorted[base + 1] - sorted[base]);
+    } else {
+      return sorted[base];
+    }
+  } catch (error) {
+    console.error('Error in computeQuantile:', error);
+    throw error;
+  }
+}
 
 function reduce(
   weights: Iterable<WeightsLike | WeightsContainer>,
@@ -268,39 +272,39 @@ export function avg(weights: Iterable<WeightsLike | WeightsContainer>): WeightsC
 }
 
 // See: https://arxiv.org/abs/2012.10333 
-// export function avgClippingWeights(
-//   peersWeights: Iterable<WeightsLike | WeightsContainer>,
-//   currentModel: WeightsContainer,
-//   tauPercentile: number
-// ): WeightsContainer {
-//   console.log('Starting avgClippingWeights with tauPercentile:', tauPercentile);
-//   console.log('Peers weights:', peersWeights);
-//   console.log('Current model:', currentModel);
+export function avgClippingWeights(
+  peersWeights: Iterable<WeightsLike | WeightsContainer>,
+  currentModel: WeightsContainer,
+  tauPercentile: number
+): WeightsContainer {
+  console.log('Starting avgClippingWeights with tauPercentile:', tauPercentile);
+  console.log('Peers weights:', peersWeights);
+  console.log('Current model:', currentModel);
 
-//   try {
-//     // Computing the centered peers weights with respect to the previous model aggregation
-//     const centeredPeersWeights: List<WeightsContainer> = centerWeights(peersWeights, currentModel);
-//     console.log('Centered peers weights:', centeredPeersWeights);
+  try {
+    // Computing the centered peers weights with respect to the previous model aggregation
+    const centeredPeersWeights: List<WeightsContainer> = centerWeights(peersWeights, currentModel);
+    console.log('Centered peers weights:', centeredPeersWeights);
 
-//     // Computing the Matrix Norm (Frobenius Norm) of the centered peers weights
-//     const normArray: number[] = Array.from(centeredPeersWeights.map(model => model.frobeniusNorm()));
-//     console.log('Norm array:', normArray);
+    // Computing the Matrix Norm (Frobenius Norm) of the centered peers weights
+    const normArray: number[] = Array.from(centeredPeersWeights.map(model => model.frobeniusNorm()));
+    console.log('Norm array:', normArray);
 
-//     // Computing the parameter tau as third percentile with respect to the norm array
-//     const tau: number = computeQuantile(normArray, tauPercentile);
-//     console.log('Computed tau:', tau);
+    // Computing the parameter tau as third percentile with respect to the norm array
+    const tau: number = computeQuantile(normArray, tauPercentile);
+    console.log('Computed tau:', tau);
 
-//     // Computing the centered clipped peers weights given the norm array and the parameter tau
-//     const centeredMean: List<WeightsContainer> = clipWeights(centeredPeersWeights, normArray, tau);
-//     console.log('Centered clipped peers weights:', centeredMean);
+    // Computing the centered clipped peers weights given the norm array and the parameter tau
+    const centeredMean: List<WeightsContainer> = clipWeights(centeredPeersWeights, normArray, tau);
+    console.log('Centered clipped peers weights:', centeredMean);
 
-//     // Aggregating all centered clipped peers weights
-//     const result = avg(centeredMean);
-//     console.log('Aggregated result:', result);
+    // Aggregating all centered clipped peers weights
+    const result = avg(centeredMean);
+    console.log('Aggregated result:', result);
 
-//     return result;
-//   } catch (error) {
-//     console.error('Error in avgClippingWeights:', error);
-//     throw error;
-//   }
-// }
+    return result;
+  } catch (error) {
+    console.error('Error in avgClippingWeights:', error);
+    throw error;
+  }
+}

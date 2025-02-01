@@ -21,7 +21,8 @@ import { decodeCentroids, encodeCentroids } from '../../serialization/weights.js
 // antibiogo defined in new Task format, need to figure out export missing for some params
 import { antibiogo } from '../../task.js'
 
-import { type Task, type DataType } from '@epfml/discojs'
+// import { type Task, type DataType } from '@epfml/discojs'
+import { Task } from '../../../core/task/task.js'
 
 /**
  * Class that deals with communication with the centralized server when training
@@ -29,7 +30,7 @@ import { type Task, type DataType } from '@epfml/discojs'
  */
 export class AntibiogoClient {
   protected connected = false
-  public readonly task: Task<DataType> = antibiogo
+  public readonly task: Task = antibiogo
 
   constructor (
     public readonly url: URL
@@ -233,7 +234,7 @@ export class AntibiogoClient {
     if (!url.pathname.endsWith('/')) {
       url.pathname += '/'
     }
-    url.pathname += `tasks/${this.task.id}`
+    url.pathname += `tasks/${this.task.taskID}`
     const response = await axios.get(url.href)
 
     return decodeCentroids(response.data)

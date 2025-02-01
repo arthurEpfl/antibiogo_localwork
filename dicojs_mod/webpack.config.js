@@ -116,9 +116,19 @@
 //   )
 // ]
 
-const path = require('path');
-const { mergeDeep } = require('immutable');
-const nodeExternals = require('webpack-node-externals');
+// const path = require('path');
+// const { mergeDeep } = require('immutable');
+// const nodeExternals = require('webpack-node-externals');
+
+import path from 'path';
+import { mergeDeep } from 'immutable';
+import nodeExternals from 'webpack-node-externals';
+import { fileURLToPath } from 'url';
+
+// Fix for __dirname in ESM
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 
 const basicConfig = {
   entry: './dist/index.js', // Ensure the entry is a TypeScript file
@@ -126,10 +136,10 @@ const basicConfig = {
   resolve: {
     extensions: ['.ts', '.js'], // Ensure Webpack resolves both .ts and .js
     fallback: {
-      crypto: require.resolve('crypto-browserify'),
-      path: require.resolve('path-browserify'),
-      stream: require.resolve('stream-browserify'),
-      querystring: require.resolve('querystring-es3'),
+      crypto: 'crypto-browserify',
+      path: 'path-browserify',
+      stream: 'stream-browserify',
+      querystring: 'querystring-es3',
     },
     alias: {
       '@': path.resolve(__dirname, 'src'),
@@ -201,33 +211,9 @@ const nodeConfig = mergeDeep(
   }
 );
 
-module.exports = [
-  mergeDeep(
-    {
-      name: 'web-dev',
-      mode: 'development', // Development mode for the web target
-    },
-    webConfig
-  ),
-  mergeDeep(
-    {
-      name: 'web-prod',
-      mode: 'production', // Production mode for the web target
-    },
-    webConfig
-  ),
-  mergeDeep(
-    {
-      name: 'node-dev',
-      mode: 'development', // Development mode for the Node.js target
-    },
-    nodeConfig
-  ),
-  mergeDeep(
-    {
-      name: 'node-prod',
-      mode: 'production', // Production mode for the Node.js target
-    },
-    nodeConfig
-  ),
+export default [
+  mergeDeep({ name: 'web-dev', mode: 'development' }, webConfig),
+  mergeDeep({ name: 'web-prod', mode: 'production' }, webConfig),
+  mergeDeep({ name: 'node-dev', mode: 'development' }, nodeConfig),
+  mergeDeep({ name: 'node-prod', mode: 'production' }, nodeConfig),
 ];

@@ -2,9 +2,9 @@ import express from 'express'
 import expressWS from 'express-ws'
 import WebSocket from 'ws'
 
-import { antibiogo } from '../../../discojs/src/msf/task.js'
+import { antibiogo } from '../../../dicojs_mod/src/msf/task.js'
 
-import { Task } from '../../../discojs/src/core/task/task.js'
+import { Task } from '../../../dicojs_mod/src/core/task/task.js'
 
 import * as tf from '@tensorflow/tfjs'
 

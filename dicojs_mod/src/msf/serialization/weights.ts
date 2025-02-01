@@ -35,7 +35,7 @@ export async function encodeCentroids (centroids: Centroids): Promise<serializat
   const serialized: serialization.Serialized[] = await Promise.all(centroids.positions.weights.map(async (t) => {
     return {
       shape: t.shape as number[],
-      data: await t.data<'float32'>(),
+      data: [...await t.data<'float32'>()],
     }
   }))
 
@@ -55,6 +55,7 @@ export function decodeCentroids (encoded: serialization.Encoded): Centroids {
   const rawPositions = raw._positions
 
   if (!(Array.isArray(rawPositions) && rawPositions.every(serialization.isSerialized))) {
+    console.log("Error: raw._positions is not an array or not correctly serialized:", rawPositions);
     throw new Error('expected to decode an array of serialized weights')
   }
 
