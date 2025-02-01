@@ -1,9 +1,9 @@
 import express from 'express'
 import expressWS from 'express-ws'
 
-import { Config } from '../config'
-import { AntibiogoFederated } from '../msf/router'
-import { Tasks } from '../msf/tasks'
+import { Config } from '../config.js'
+import { AntibiogoFederated } from '../msf/router.js'
+import { Tasks } from '../msf/tasks.js'
 
 export class Router {
   private readonly ownRouter: expressWS.Router

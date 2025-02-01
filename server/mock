@@ -18,8 +18,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@epfml/discojs-node": "^2.1.1",
     "@koush/wrtc": "0.5",
-    "@tensorflow/tfjs": "4.1.0",
     "axios": "^1.2.1",
     "cors": "2",
     "epfl-antibiogo-lib": "file:../discojs",
@@ -39,7 +39,7 @@
     "execMap": {
       "ts": "node --inspect=0.0.0.0:9229 --nolazy -r ts-node/register"
     }
-  }, 
+  },
   "devDependencies": {
     "@types/chai": "4",
     "@types/cors": "2",

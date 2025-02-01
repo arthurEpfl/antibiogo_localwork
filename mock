@@ -18,18 +18,19 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@epfml/discojs-node": "^2.1.1",
+    "@epfml/isomorphic-wrtc": "^1.0.0",
     "@koush/wrtc": "0.5",
-    "@tensorflow/tfjs": "4.1.0",
     "axios": "^1.2.1",
     "cors": "2",
+    "domexception": "^4.0.0",
     "epfl-antibiogo-lib": "file:../discojs",
     "express": "4",
     "express-ws": "5",
     "immutable": "4.1",
     "isomorphic-wrtc": "^1.0.4",
     "lodash": "4",
-    "msgpack-lite": "0.1",
-    "sharp": "^0.33.5"
+    "msgpack-lite": "0.1"
   },
   "nodemonConfig": {
     "ignore": [
@@ -39,10 +40,11 @@
     "execMap": {
       "ts": "node --inspect=0.0.0.0:9229 --nolazy -r ts-node/register"
     }
-  }, 
+  },
   "devDependencies": {
     "@types/chai": "4",
     "@types/cors": "2",
+    "@types/domexception": "^4.0.3",
     "@types/express-ws": "3",
     "@types/mocha": "9",
     "@types/msgpack-lite": "0.1",

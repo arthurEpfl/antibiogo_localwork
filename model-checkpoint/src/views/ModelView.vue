@@ -49,25 +49,59 @@ import CustomButton from '@/components/button/CustomButton.vue'
 
 const settingsStore = useSettingsStore()
 
+// async function aggregate (): Promise<void> {
+//   let response
+//   try {
+//     response = await axios.get(settingsStore.serverEndpoint.href)
+//   } catch (e: any) {
+//     notify.error(e)
+//     return
+//   }
+
+//   if (response.status === 200) {
+//     notify.success()
+//   } else {
+//     notify.error()
+//   }
+// }
+
 async function aggregate (): Promise<void> {
   let response
   try {
-    response = await axios.get(settingsStore.serverEndpoint.href)
+    response = await axios.get(new URL('antibiogo/trigger-aggregation', settingsStore.serverEndpoint).href)
   } catch (e: any) {
-    notify.error(e)
+    notify.error(`Error in /antibiogo/trigger-aggregation: ${e.message}`)
     return
   }
 
   if (response.status === 200) {
-    notify.success()
+    notify.success('Aggregation successful')
+  } else if (response.status === 503) {
+    notify.error('Aggregation already in progress')
   } else {
-    notify.error()
+    notify.error('Error while aggregating')
   }
 }
 
-function discard (): void {
-  // TODO: command the server to discard contributions
-  notify.error('Not implemented')
+// function discard (): void {
+//   // TODO: command the server to discard contributions
+//   notify.error('Not implemented')
+// }
+
+async function discard (): Promise<void> {
+  let response
+  try {
+    response = await axios.get(new URL('antibiogo/discard', settingsStore.serverEndpoint).href)
+  } catch (e: any) {
+    notify.error(`Error in /antibiogo/discard: ${e.message}`)
+    return
+  }
+
+  if (response.status === 200) {
+    notify.success('Buffer discarded successfully')
+  } else {
+    notify.error('Error while discarding buffer')
+  }
 }
 
 const model = shallowRef<msf.centroids.Centroids | undefined>(await fetchServerModel())

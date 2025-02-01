@@ -5,8 +5,8 @@ import cors from 'cors'
 import express from 'express'
 import expressWS from 'express-ws'
 
-import { CONFIG } from './config'
-import { Router } from './router'
+import { CONFIG } from './config.js'
+import { Router } from './router/router.js'
 import axios from 'axios'
 
 export class AntibiogoServer {

@@ -2,7 +2,11 @@ import express from 'express'
 import expressWS from 'express-ws'
 import WebSocket from 'ws'
 
-import { tf, Task, msf } from 'epfl-antibiogo-lib'
+import { antibiogo } from '../../../discojs/src/msf/task.js'
+
+import { Task } from '../../../discojs/src/core/task/task.js'
+
+import * as tf from '@tensorflow/tfjs'
 
 export abstract class Server {
   private readonly ownRouter: expressWS.Router
@@ -21,7 +25,7 @@ export abstract class Server {
   }
 
   protected isValidTask (taskId: string): boolean {
-    return taskId === msf.antibiogo.taskID
+    return taskId === antibiogo.id
   }
 
   protected isValidClientId (clientId: string): boolean {

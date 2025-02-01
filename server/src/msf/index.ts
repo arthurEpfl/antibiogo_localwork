@@ -1,1 +1,1 @@
-export * as centroid from './centroids'
+export * as centroid from './centroids.js'

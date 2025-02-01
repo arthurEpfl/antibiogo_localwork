@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@epfml/isomorphic-wrtc": "^1.0.0",
+    "domexception": "^4.0.0"
+  }
+}
