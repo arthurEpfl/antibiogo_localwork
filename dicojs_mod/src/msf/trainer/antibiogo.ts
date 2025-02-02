@@ -8,9 +8,12 @@ import { antibiogo } from '../task.js'
 import { Centroids, CentroidsJson, fromJson, toJson } from '../weights/centroids.js'
 import { Config, defaultConfig } from '../../config.js'
 
-/**
- * Convenient top-level class.
- */
+/*
+Convenient top-level class for:
+Initialize the client and connect to the server.
+Make prediction and send updated model back to server for aggregation. 
+*/
+
 export class Antibiogo {
   private constructor (
     private readonly client: AntibiogoClient,

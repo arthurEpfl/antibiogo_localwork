@@ -9,6 +9,10 @@ import { CONFIG } from './config.js'
 import { Router } from './router/router.js'
 import axios from 'axios'
 
+/*
+Create and start antibiogo server.
+*/
+
 export class AntibiogoServer {
   private readonly _app: express.Application
 

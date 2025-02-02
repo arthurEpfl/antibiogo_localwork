@@ -4,6 +4,16 @@ import msgpack from 'msgpack-lite'
 import { type, NarrowMessage, Message } from './messages.js'
 import { timeout } from './utils.js'
 
+/*
+WebSocket communication system for handling messaging in federated learning.
+Enables clients and servers to exchange messages using WebSockets.
+
+EventConnection: Standard way to send and receive messages over a network.
+waitMessage(): Wait for specific responses from the server.
+waitMessageWithTimeout(): Same with timeout to prevent indefinite waiting, currently set as 10 seconds in const MAX_WAIT_PER_ROUND.
+WebSocketServer: Ensures messages sent and received have correct types and formats.
+*/
+
 export interface EventConnection {
   on: <K extends type>(type: K, handler: (event: NarrowMessage<K>) => void) => void
   once: <K extends type>(type: K, handler: (event: NarrowMessage<K>) => void) => void
@@ -23,9 +33,6 @@ export async function waitMessage<T extends type> (connection: EventConnection, 
 export async function waitMessageWithTimeout<T extends type> (connection: EventConnection, type: T, timeoutMs: number): Promise<NarrowMessage<T>> {
   return await Promise.race([waitMessage(connection, type), timeout(timeoutMs)])
 }
-
-// import { client } from '@epfml/discojs'
-// There is no export path to event_connection.ts so need to add it in fork
 
 export class WebSocketServer implements EventConnection {
   private constructor (

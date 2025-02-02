@@ -1,8 +1,9 @@
-// import { MetadataID } from '../../types.js'
-// Warning for this one as well, takes weights from index.js "taken from elsewhere"
 import { weights } from '../../serialization/index.js'
-
 import { type, hasMessageType } from '../messages.js'
+
+/*
+Base class for all messages. Represents all possible federated learning messages.
+*/
 
 export type MessageFederated =
   postWeightsToServer |

@@ -2,7 +2,6 @@ import express from 'express'
 import WebSocket from 'ws'
 import msgpack from 'msgpack-lite'
 import { List, Map, Set } from 'immutable'
-// import expressWs = require('express-ws')
 import expressWs from 'express-ws';
 
 import { AsyncInformant } from '../../../dicojs_mod/src/core/async_informant.js'
@@ -17,10 +16,17 @@ import { messageGeneral, pullServerStatistics } from '../../../dicojs_mod/src/co
 import { type } from '../../../dicojs_mod/src/core/client/messages.js'
 
 import { readFromCsv, writeToCsv } from './centroids.js'
-// import messages = client.federated.messages
 import messageTypes = type
 import clientConnected = type.clientConnected
 import { CONFIG } from '../config.js'
+
+/*
+Aggregation functions from server side. 
+Defines API, functions called per server endpoint.
+/trigger-aggregation: Triggers aggregation of centroids from model and client side.
+/centroids: Shows centroids in buffer.
+/discard: Discards all centroids in buffer.
+*/
 
 enum RequestType {
   Connect,

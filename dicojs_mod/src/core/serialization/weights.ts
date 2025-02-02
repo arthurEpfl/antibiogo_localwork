@@ -1,18 +1,15 @@
-// import { serialization } from '@tensorflow/tfjs'
+/*
+This code provides type definitions and validation functions for checking the structure of serialized and encoded data.
+Ensures data formats are correct before they are used.
+Used to ensure encoding and decoding of the centroids will ensure that the obtained centroids are compatible with current 
+prototypical model. 
+*/
 
-// export { serialization } from '@epfml/discojs'
 
-// have same Serialized interface as in Disco
 export interface Serialized {
   shape: number[]
   data: number[]
 }
-
-// From DISCO:
-// export interface Serialized {
-//   shape: number[];
-//   data: Float32Array;
-// }
 
 export function isSerialized (raw: unknown): raw is Serialized {
   if (typeof raw !== 'object' || raw === null) {
@@ -36,27 +33,7 @@ export function isSerialized (raw: unknown): raw is Serialized {
   return true
 }
 
-// From DISCO
-// export function isSerialized(raw: unknown): raw is Serialized {
-//   if (typeof raw !== "object" || raw === null) return false;
-
-//   const { shape, data }: Partial<Record<"shape" | "data", unknown>> = raw;
-
-//   if (
-//     !(Array.isArray(shape) && shape.every((e) => typeof e === "number")) ||
-//     !(data instanceof Float32Array)
-//   )
-//     return false;
-
-//   const _: Serialized = { shape, data };
-
-//   return true;
-// }
-
 export type Encoded = number[]
-
-// export type Encoded = Uint8Array;
-
 
 export function isEncoded (raw: unknown): raw is Encoded {
   return Array.isArray(raw) && raw.every((e) => typeof e === 'number')

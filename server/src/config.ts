@@ -2,6 +2,10 @@ import path from 'path'
 
 import { antibiogo } from '../../dicojs_mod/src/msf/task.js'
 
+/*
+Define url and config with the link to csv model.
+*/
+
 export class Config {
   public readonly serverUrl: URL
 

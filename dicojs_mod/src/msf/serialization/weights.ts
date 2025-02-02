@@ -5,6 +5,11 @@ import { weights as serialization } from '../../core/serialization/index.js'
 import { WeightsContainer } from '../../core/weights/weights_container.js'
 import { Centroids } from '../weights/centroids.js'
 
+/*
+Methods to get the 4 components of centroid object (position, radius, counts, labels).
+Also functions for encoding before sending between server and client, then decoding after message received.
+*/
+
 export class SerializedCentroids {
   constructor (
     private readonly _positions: serialization.Serialized[],
@@ -70,71 +75,3 @@ export function decodeCentroids (encoded: serialization.Encoded): Centroids {
     raw._labels
   )
 }
-
-// Using the functions already in DISCO, the encoding would look like this:
-// With the coder.encode having some extra features (extension CODEC etc)
-// It is missing the creation of the centroids object !!!
-
-// export function coderencode(serialized: unknown): serialization.Encoded {
-//   return msgpack.encode(serialized, { extensionCodec: CODEC });
-// }
-
-// export function coderdecode(encoded: serialization.Encoded): unknown {
-//   return msgpack.decode(encoded, { extensionCodec: CODEC });
-// }
-
-// export async function encode(weights: WeightsContainer): Promise<serialization.Encoded> {
-//   const serialized: serialization.Serialized[] = await Promise.all(
-//     weights.weights.map(async (t) => ({
-//       shape: t.shape as number[],
-//       data: await t.data<"float32">(),
-//     })),
-//   );
-
-//   return coderencode(serialized);
-// }
-
-// export function decode(encoded: serialization.Encoded): WeightsContainer {
-//   const raw = coderdecode(encoded);
-
-//   if (!(Array.isArray(raw) && raw.every(serialization.isSerialized)))
-//     throw new Error("expected to decode an array of serialized weights");
-
-//   return new WeightsContainer(raw.map((w) => tf.tensor(w.data, w.shape)));
-// }
-
-
-
-
-
-
-// DISO encoding:
-// export async function encode(weights: WeightsContainer): Promise<Encoded> {
-//   const serialized: Serialized[] = await Promise.all(
-//     weights.weights.map(async (t) => ({
-//       shape: t.shape as number[],
-//       data: await t.data<"float32">(),
-//     })),
-//   );
-
-//   return coder.encode(serialized);
-// }
-
-// export function decode(encoded: Encoded): WeightsContainer {
-//   const raw = coder.decode(encoded);
-
-//   if (!(Array.isArray(raw) && raw.every(isSerialized)))
-//     throw new Error("expected to decode an array of serialized weights");
-
-//   return new WeightsContainer(raw.map((w) => tf.tensor(w.data, w.shape)));
-// }
-
-// From DISCO/coder 
-
-// export function encode(serialized: unknown): Encoded {
-//   return msgpack.encode(serialized, { extensionCodec: CODEC });
-// }
-
-// export function decode(encoded: Encoded): unknown {
-//   return msgpack.decode(encoded, { extensionCodec: CODEC });
-// }

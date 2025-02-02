@@ -1,20 +1,14 @@
-// export { WeightsContainer } from '@epfml/discojs'
-// export { serialization } from '@epfml/discojs'
 import { List } from 'immutable'
-// import { Weights } from '..'
 type Weights = tf.Tensor[]
 import * as tf from '@tensorflow/tfjs'
 
+/*
+All functions associated to WeightsContainer object used to handle weights of centroids in latent space.
+Used in all functions for aggregation scheme (/aggregation.ts).
+Frobenius norm function only for Byzantine robust aggregation method.
+*/
+
 export type TensorLike = tf.Tensor | ArrayLike<number>
-
-// Missing instances for the avgClippingWeights function (froebinius norm for example, but ignore for now)
-
-// frobeniusNorm function is missing in the WeightsContainer interface from epfml/discojs
-// declare module '@epfml/discojs' {
-//     interface WeightsContainer {
-//       frobeniusNorm(): number;
-//     }
-// }
 
 export class WeightsContainer {
   private readonly _weights: List<tf.Tensor>

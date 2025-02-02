@@ -2,6 +2,11 @@ import { List } from 'immutable'
 import { WeightsContainer } from '../../core/weights/weights_container.js'
 import * as tf from '@tensorflow/tfjs'
 
+/*
+Centroids class extension of WeightsContainer, addition of radius, count and label.
+*/
+
+
 export type CentroidsJson = Array<{ position: number[], label: string, radius: number, count: number }>
 
 export type CentroidEntry = [tf.Tensor, number, number, string]

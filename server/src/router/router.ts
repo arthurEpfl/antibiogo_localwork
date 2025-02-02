@@ -5,6 +5,10 @@ import { Config } from '../config.js'
 import { AntibiogoFederated } from '../msf/router.js'
 import { Tasks } from '../msf/tasks.js'
 
+/*
+Create appropriate server enpoints.
+*/
+
 export class Router {
   private readonly ownRouter: expressWS.Router
 

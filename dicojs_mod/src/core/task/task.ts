@@ -2,8 +2,6 @@ import { isDisplayInformation, DisplayInformation } from './display_information.
 import { isTrainingInformation, TrainingInformation } from './training_information.js'
 import { isDigest, Digest } from './digest.js'
 
-// export {type Task, isTask, isTaskID, type TaskID } from '@epfml/discojs'
-
 export type TaskID = string
 
 export function isTaskID (obj: unknown): obj is TaskID {

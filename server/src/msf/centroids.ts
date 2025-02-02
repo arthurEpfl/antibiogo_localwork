@@ -3,6 +3,11 @@ import { List } from 'immutable'
 
 import * as tf from '@tensorflow/tfjs'
 
+/*
+Prototypical model saved as csv in a drive.
+Methods here allow to get centroids from csv file format. 
+*/
+
 import { Centroids, fromEntries, toEntries, CentroidEntry } from '../../../dicojs_mod/src/msf/weights/centroids.js'
 
 export function readFromCsv (path: string): Centroids {

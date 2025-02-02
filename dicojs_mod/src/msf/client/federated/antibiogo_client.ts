@@ -1,33 +1,22 @@
 import { v4 as randomUUID } from 'uuid'
-// import * as nodeUrl from 'url'
 import axios from 'axios'
-
 
 import * as messages from '../../../core/client/federated/messages.js'
 import { privacy } from '../../../core/index.js'
 import { informant } from '../../../core/informant/index.js'
-// This is just a string type not needed as MetaDataID type:
-// import { MetadataID } from '../../../core/types.js' 
-// import { Task } from '../../../core/task/task.js'
 import { type, clientConnected } from '../../../core/client/messages.js'
-// need to add export path to EventConnection.ts in DISCO
 import { EventConnection, waitMessageWithTimeout, WebSocketServer } from '../../../core/client/event_connection.js'
-// MAX_WAIT_PER_ROUND exists in DISCO, no problem here
 import { MAX_WAIT_PER_ROUND } from '../../../core/client/utils.js'
-// Centroids defined in MSF just calls on weightsContainer, so is fine
 import { Centroids } from '../../weights/centroids.js'
-// From serialiazation
 import { decodeCentroids, encodeCentroids } from '../../serialization/weights.js'
-// antibiogo defined in new Task format, need to figure out export missing for some params
 import { antibiogo } from '../../task.js'
 
-// import { type Task, type DataType } from '@epfml/discojs'
 import { Task } from '../../../core/task/task.js'
 
-/**
- * Class that deals with communication with the centralized server when training
- * a specific task in the federated setting.
- */
+/*
+Class that deals with communication with the centralized server when training a specific task in the federated setting.
+Class contains functions all for establishing and ending connection between client and server, sending and receiving messages. 
+*/
 export class AntibiogoClient {
   protected connected = false
   public readonly task: Task = antibiogo
@@ -208,6 +197,7 @@ export class AntibiogoClient {
     _: number,
     trainingInformant: informant.FederatedInformant
   ): Promise<Centroids> {
+    // Here, for our use case, addDiffPrivacy will just return same. Since no clippingRadius or noiseScale is defined.
     const noisyCentroids = privacy.addDifferentialPrivacy(
       updatedCentroids.positions,
       staleCentroids.positions,

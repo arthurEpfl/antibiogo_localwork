@@ -8,6 +8,10 @@ import { Task } from '../../../dicojs_mod/src/core/task/task.js'
 
 import * as tf from '@tensorflow/tfjs'
 
+/*
+Base server class, extended by other classes (e.g. AntibiogoFederated).
+*/
+
 export abstract class Server {
   private readonly ownRouter: expressWS.Router
 
@@ -25,7 +29,7 @@ export abstract class Server {
   }
 
   protected isValidTask (taskId: string): boolean {
-    return taskId === antibiogo.id
+    return taskId === antibiogo.taskID
   }
 
   protected isValidClientId (clientId: string): boolean {

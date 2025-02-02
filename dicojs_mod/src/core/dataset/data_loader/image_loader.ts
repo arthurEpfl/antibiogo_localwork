@@ -7,7 +7,6 @@ import { DataSplit } from '../data/data_split.js'
 import { ImageData } from '../data/image_data.js'
 import { DataLoader, DataConfig } from './data_loader.js'
 
-// import { DataType } from '@epfml/discojs'
 
 /**
  * TODO @s314cy:

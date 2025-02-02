@@ -4,8 +4,6 @@ export * as privacy from './privacy.js'
 export { TrainingInformant, informant } from './informant/index.js'
 export { GraphInformant } from './informant/graph_informant.js'
 
-
-
 export * as client from './client/index.js'
 
 export { aggregation } from './weights/index.js'

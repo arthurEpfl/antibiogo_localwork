@@ -3,7 +3,7 @@ import { Map } from 'immutable'
 import { AsyncInformant } from './async_informant.js'
 import { TaskID } from './task/task.js'
 
-/**
+/*
  * The AsyncWeightsBuffer class holds and manipulates information about the
  * async weights buffer. It works as follows:
  *
@@ -13,7 +13,6 @@ import { TaskID } from './task/task.js'
  * - If a user already added weights, update them. (-> there can be at most one entry of weights per id in a buffer).
  * - When the buffer is full, call aggregateAndStoreWeights with the weights in the buffer and then increment round by one  and reset the buffer.
  *
- * @remarks
  * taskID: corresponds to the task that weights correspond to.
  * bufferCapacity: size of the buffer.
  * buffer: holds a map of users to their added weights.

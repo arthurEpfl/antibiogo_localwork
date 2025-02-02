@@ -4,6 +4,11 @@ import { WeightsContainer } from '../../core/weights/weights_container.js'
 import { informant } from '../../core/informant/index.js'
 import { Centroids } from '../weights/centroids.js'
 
+/*
+Class to make the prediction based on new embedding, update the prototypes accordingly. 
+Fix: if embedding labelled as a new label, the radius defined as average of all other existing prototypes radiuses.
+*/
+
 export class PrototypicalTrainer {
   constructor (
     public readonly trainingInformant: informant.FederatedInformant,
