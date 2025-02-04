@@ -15,7 +15,9 @@
     "build:all": "npm run build && npm run prod:node && npm run prod:web",
     "test": "mocha",
     "test:aggregation": "mocha --require esm --reporter spec 'src/core/weights/aggregation.spec.ts'",
-    "test:fit_new": "mocha --require esm --reporter spec 'test_1new_spec.ts'"
+    "test:fit_new": "mocha --require esm --reporter spec 'test_1new_spec.ts'",
+    "test:fit_second": "mocha --require esm --reporter spec 'test_1new_spec2.ts'",
+    "test:fit_multiple": "mocha --require esm --reporter spec 'test_multiple_spec.ts'"
   },
   "repository": {
     "type": "git",

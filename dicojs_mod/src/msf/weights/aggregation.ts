@@ -36,14 +36,14 @@ export function aggregateCentroids (
     throw error;
   }
 
-  try {
-    if (!contributions.every((contribution) => contribution.counts.length >= centroids.counts.length)) {
-      throw new Error('Centroids counts length mismatch');
-    }
-  } catch (error) {
-    console.error('Error checking centroid counts length:', error);
-    throw error;
-  }
+  // try {
+  //   if (!contributions.every((contribution) => contribution.counts.length >= centroids.counts.length)) {
+  //     throw new Error('Centroids counts length mismatch');
+  //   }
+  // } catch (error) {
+  //   console.error('Error checking centroid counts length:', error);
+  //   throw error;
+  // }
 
   console.log('Contributions:', contributions);
 

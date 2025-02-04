@@ -34,11 +34,18 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const ROOT_DIR = path.join(__dirname, '..', '..', '..');
+const ROOT_DIR = path.join(__dirname, '..', '..');
 
 export const CONFIG = new Config(
   8080,
   'file://',
-  path.join(ROOT_DIR, 'server', 'models', antibiogo.taskID, 'model.csv'),
+  path.join(ROOT_DIR, 'server', 'model.csv'),
   'https://storage.googleapis.com/deai-313515.appspot.com/models/model.csv'
 )
+
+// export const CONFIG = new Config(
+//   8080,
+//   'file://',
+//   path.join(ROOT_DIR, 'model.csv'),
+//   'https://storage.googleapis.com/deai-313515.appspot.com/models/model.csv'
+// )

@@ -27,7 +27,7 @@ export class AsyncBuffer<T> {
   constructor (
     public readonly taskID: TaskID,
     private readonly aggregateAndStoreWeights: (weights: Iterable<T>) => Promise<void>,
-    private readonly roundCutoff = 0
+    private readonly roundCutoff = 4
   ) {
     this.buffer = Map()
     this.round = 0

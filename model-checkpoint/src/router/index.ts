@@ -4,6 +4,7 @@ import HomeView from '@/views/HomeView.vue'
 import AboutView from '@/views/AboutView.vue'
 import ModelView from '@/views/ModelView.vue'
 import SettingsView from '@/views/SettingsView.vue'
+import PCAView from '@/views/PCAView.vue'
 
 export const routes = [
   {
@@ -25,6 +26,11 @@ export const routes = [
     path: '/about',
     name: 'about',
     component: AboutView
+  },
+  {
+    path: '/pca',
+    name: 'pca',
+    component: PCAView
   }
 ]
 

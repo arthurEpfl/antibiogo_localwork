@@ -3,6 +3,9 @@ import WebSocket from 'ws'
 import msgpack from 'msgpack-lite'
 import { List, Map, Set } from 'immutable'
 import expressWs from 'express-ws';
+import { PCA } from 'ml-pca';
+import * as tf from '@tensorflow/tfjs'
+
 
 import { AsyncInformant } from '../../../dicojs_mod/src/core/async_informant.js'
 import { TaskID } from '../../../dicojs_mod/src/core/task/task.js'
@@ -88,6 +91,10 @@ export class AntibiogoFederated {
         res.status(500).send({ error: "Internal Server Error" });
       }
     });
+
+    // PCA API
+    this.ownRouter.get('/pca', (req, res) => this.performPCAWithContributions(req, res))
+
     this.ownRouter.get('/centroids', (req, res) => this.getClientContributions(req, res))
     this.ownRouter.get('/', (_, res) => res.send(this.description + '\n'))
 
@@ -337,8 +344,6 @@ export class AntibiogoFederated {
     tauPercentile?: number
   ): void {
     // Check if centroids being passed
-    console.log('Centroids received for aggregation:', centroids);
-    console.log('Tau percentile:', tauPercentile);
     try {
       console.log('Calling aggregateCentroids');
       console.log('Current centroids:', this.centroids);
@@ -387,5 +392,189 @@ export class AntibiogoFederated {
       client: clientId,
       request: type
     })
+  }
+
+  // private performPCAWithContributions(req: express.Request, res: express.Response): void {
+  //   console.log("Received request for PCA on centroids with contributions.");
+  
+  //   try {
+  //     if (!this.centroids || this.centroids.positions.weights.length === 0) {
+  //       throw new Error("No centroids available for PCA.");
+  //     }
+  
+  //     // Extract weights from current centroids
+  //     const currentWeightTensors: tf.Tensor[] = this.centroids.positions.weights;
+  //     const currentNumericWeights: number[][] = currentWeightTensors.map(tensor => Array.from(tensor.dataSync()));
+  
+  //     console.log("Extracted current numeric weights for PCA:", currentNumericWeights);
+  
+  //     if (currentNumericWeights.length === 0 || currentNumericWeights[0].length === 0) {
+  //       throw new Error("Weight extraction failed or empty data.");
+  //     }
+  
+  //     // Perform PCA on current model
+  //     const currentPCA = new PCA(currentNumericWeights);
+  //     const transformedCurrent: number[][] = currentPCA.predict(currentNumericWeights, { nComponents: 2 }).to2DArray();
+  
+  //     console.log("PCA on current model completed:", transformedCurrent);
+  
+  //     // Create a temporary aggregated model (without modifying the real model)
+  //     const tempAggregatedModel = this.mergeCentroidsWithClientModel(
+  //       this.centroids,
+  //       this.asyncBuffer?.buffer.entrySeq().toList() ?? List()
+  //     );
+  
+  //     // Extract weights from aggregated model
+  //     const aggregatedWeightTensors: tf.Tensor[] = tempAggregatedModel.positions.weights;
+  //     const aggregatedNumericWeights: number[][] = aggregatedWeightTensors.map(tensor => Array.from(tensor.dataSync()));
+  
+  //     console.log("Extracted aggregated numeric weights for PCA:", aggregatedNumericWeights);
+  
+  //     // Perform PCA on aggregated model
+  //     const transformedAggregated: number[][] = currentPCA.predict(aggregatedNumericWeights, { nComponents: 2 }).to2DArray();
+  
+  //     console.log("PCA on aggregated model completed:", transformedAggregated);
+  
+  //     // Extract labels and radii for both models
+  //     const currentLabels = this.centroids.labels;
+  //     const currentRadii = this.centroids.radius;
+      
+  //     const clientLabels = tempAggregatedModel.labels;
+  //     const clientRadii = tempAggregatedModel.radius;
+  
+  //     // Normalize radius values separately for both models
+  //     const maxCurrentRadius = Math.max(...currentRadii);
+  //     const scaledCurrentRadii = currentRadii.map(r => (r / maxCurrentRadius) * 4); // Scale to reasonable size
+  
+  //     const scaledClientRadii = clientRadii.map(r => (r / maxCurrentRadius) * 4); // Scale with same weights
+  
+  //     // Send both PCA results, labels, and radii as JSON response
+  //     res.status(200).json({
+  //       current_pca_result: transformedCurrent,
+  //       aggregated_pca_result: transformedAggregated,
+  //       current_labels: currentLabels,
+  //       current_radii: scaledCurrentRadii,
+  //       aggregated_labels: clientLabels,
+  //       aggregated_radii: scaledClientRadii
+  //     });
+  
+  //   } catch (error) {
+  //     console.error("Error performing PCA with contributions:", error);
+  //     res.status(500).json({ error: "Internal Server Error" });
+  //   }
+  // }
+
+  private async performPCAWithContributions(req: express.Request, res: express.Response): Promise<void> {
+    console.log("Received request for PCA on centroids with contributions.");
+
+    try {
+        if (!this.centroids || this.centroids.positions.weights.length === 0) {
+            throw new Error("No centroids available for PCA.");
+        }
+
+        // Extract weights from current centroids
+        const currentWeightTensors: tf.Tensor[] = this.centroids.positions.weights;
+        const currentNumericWeights: number[][] = currentWeightTensors.map(tensor => Array.from(tensor.dataSync()));
+
+        console.log("Extracted current numeric weights for PCA:", currentNumericWeights);
+
+        if (currentNumericWeights.length === 0 || currentNumericWeights[0].length === 0) {
+            throw new Error("Weight extraction failed or empty data.");
+        }
+
+        // Perform PCA on current model
+        const currentPCA = new PCA(currentNumericWeights);
+        const transformedCurrent: number[][] = currentPCA.predict(currentNumericWeights, { nComponents: 2 }).to2DArray();
+
+        console.log("PCA on current model completed:", transformedCurrent);
+
+        if (!this.asyncBuffer) {
+            throw new Error("Async buffer is not initialized.");
+        }
+
+        // Create a temporary aggregated model (without modifying the real model)
+        console.log("Creating a temporary aggregated model...");
+
+        const clientContributions = this.asyncBuffer.buffer.toArray().map(([_, centroid]) => centroid);
+        if (clientContributions.length === 0) {
+            console.warn("No client contributions available, using original model.");
+        }
+
+        // Aggregate client contributions into a temporary model
+        const tempAggregatedModel = aggregateCentroids(
+            this.centroids, // Original model
+            List(clientContributions) // Client contributions
+        );
+
+        console.log("Temporary aggregation completed for PCA visualization.");
+
+        // Extract weights from temporary aggregated model
+        const aggregatedWeightTensors: tf.Tensor[] = tempAggregatedModel.positions.weights;
+        const aggregatedNumericWeights: number[][] = aggregatedWeightTensors.map(tensor => Array.from(tensor.dataSync()));
+
+        console.log("Extracted aggregated numeric weights for PCA:", aggregatedNumericWeights);
+
+        // Perform PCA on aggregated model
+        const transformedAggregated: number[][] = currentPCA.predict(aggregatedNumericWeights, { nComponents: 2 }).to2DArray();
+
+        console.log("PCA on aggregated model completed:", transformedAggregated);
+
+        // Extract labels and radii for both models
+        const currentLabels = this.centroids.labels;
+        const currentRadii = this.centroids.radius;
+
+        const aggregatedLabels = tempAggregatedModel.labels;  // Temporary aggregated model's labels
+        const aggregatedRadii = tempAggregatedModel.radius;  // Temporary aggregated model's radii
+
+        // Normalize radius values separately for both models
+        const maxCurrentRadius = Math.max(...currentRadii);
+        const scaledCurrentRadii = currentRadii.map(r => (r / maxCurrentRadius) * 4); // Scale to reasonable size
+
+        const scaledAggregatedRadii = aggregatedRadii.map(r => (r / maxCurrentRadius) * 4); // Scale with same weights
+
+        // Send both PCA results, labels, and radii as JSON response
+        res.status(200).json({
+            current_pca_result: transformedCurrent,
+            aggregated_pca_result: transformedAggregated,
+            current_labels: currentLabels,
+            current_radii: scaledCurrentRadii,
+            aggregated_labels: aggregatedLabels,
+            aggregated_radii: scaledAggregatedRadii
+        });
+
+    } catch (error) {
+        console.error("Error performing PCA with contributions:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+  }
+
+  private mergeCentroidsWithClientModel(
+    currentModel: Centroids,
+    clientContributions: List<[string, Centroids]>
+  ): Centroids {
+    console.log("Merging client contributions into a temporary model...");
+
+    if (clientContributions.size === 0) {
+      console.warn("No client contributions available.");
+      return currentModel; // Return original model if no contributions exist
+    }
+
+    // Extract the latest client-contributed model (without modifying the actual model)
+    const latestClientModel = clientContributions.last()?.[1];
+
+    if (!latestClientModel || latestClientModel.positions.weights.length === 0) {
+      console.warn("Invalid client model received.");
+      return currentModel; // Return original model if client model is invalid
+    }
+
+    console.log("Client model successfully merged into a temporary version.");
+    
+    // Return a copy of the client model without modifying state
+    return new Centroids(
+      latestClientModel.positions,
+      [...latestClientModel.radius],
+      [...latestClientModel.counts],
+      [...latestClientModel.labels]
+    );
   }
 }

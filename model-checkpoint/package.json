@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@kyvg/vue3-notification": "^2.7.0",
+    "chart.js": "^4.4.7",
     "epfl-antibiogo-lib": "file:../dicojs_mod",
     "immutable": "4.1",
     "pinia": "^2.0.28",

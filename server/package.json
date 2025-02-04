@@ -28,6 +28,7 @@
     "immutable": "4.1",
     "isomorphic-wrtc": "^1.0.4",
     "lodash": "4",
+    "ml-pca": "^4.1.1",
     "msgpack-lite": "0.1",
     "sharp": "^0.33.5"
   },
@@ -39,7 +40,7 @@
     "execMap": {
       "ts": "node --inspect=0.0.0.0:9229 --nolazy -r ts-node/register"
     }
-  }, 
+  },
   "devDependencies": {
     "@types/chai": "4",
     "@types/cors": "2",
