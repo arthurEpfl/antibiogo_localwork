@@ -24,7 +24,7 @@ Install the server's dependencies and run it
 ```
 cd server/
 npm install
-npm start
+npx tsx src/run_server.ts
 ```
 
 Buffer pool of server initialized as empty. Server API:
