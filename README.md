@@ -65,3 +65,5 @@ npm run test:fit_multiple //For client contribution of 3 embeddings (1 new, 2 al
 # Example run
 
 Follow all above in order, choosing client contribution. Once contribution from client sent to buffer, go to model-checkpoint vue page, go to PCA model view to check out PCA view before executing aggregate button (pca only works when buffer non empty). Do aggregate to update model (you will see donwloaded csv file model.csv will be updated).
+
+Warning on model-checkpoint website: might be slow (so is running the test case in dicojs_mod :( ), might need to refresh page after aggregation to show changes in central server model when pressing Fetch Model button.   
