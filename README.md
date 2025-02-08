@@ -1,12 +1,9 @@
-# Antibiogo Server
+# Local Prototypical Federated Learning Scheme
+This repository implements a local implementation of a federated prototypical learning scheme. The initial model is loaded from an external csv file and some examples of client contributions exist in the test cases.
 
-This repo contains two projects:
-- the server enabling federated learning for prototypes
-- the small web client allowing one to visualize and explore the aggregations performed by the server
+# Environment
 
-## Environment
-
-Both projects are based off [node.js](https://nodejs.org/en/). We highly recommend using [nvm](https://github.com/nvm-sh/nvm) ([asdf](https://asdf-vm.com/) also works) for managing your node environment.
+Project based off [node.js](https://nodejs.org/en/). We highly recommend using [nvm](https://github.com/nvm-sh/nvm) ([asdf](https://asdf-vm.com/) also works) for managing your node environment.
 Once nvm is installed, you can run the following to download and activate an environment with node v16 and npm v8:
 
 ```
@@ -20,46 +17,51 @@ If you plan on using node for this project exclusively, you can set your default
 nvm alias default 16
 ```
 
-## Server for federated learning
-
-The `server/` dir contains the server code responsible for prototype aggregation.
-
-Once the server received prototype updates from enough clients (threshold currently set to 1), it performs the following aggregation step:
-
-1. Average the positions of received prototypes
-3. Increase the sample counts
-2. Update the radiuses only if the prototypes belong to new unseen classes
-4. Add the prototype labels for new unseen classes
-
-A last step consists in updating the server's prototypes with the aggregation step's results. Before doing so, a human must validate the new prototypes via the model checkpoint interface. 
-
-### Running the server locally
-
-Install the lib's dependencies and build it
-
-```
-cd discojs/
-npm ci
-npm run build:node
-```
+# Starting server
 
 Install the server's dependencies and run it
 
 ```
-cd ..
 cd server/
-npm ci
+npm install
 npm start
 ```
 
-## Web client for model checkpoint
+Buffer pool of server initialized as empty. Server API:
 
-The `model-checkpoint/` dir contains the [Vue](https://vuejs.org/) client from which the server will await for validation after each aggregation step. Once the server received the client's confirmation, it will update its stored prototypes with the aggregation step's results.
+ - antibiogo/centroids: client contributions.
+ - antibiogo/trigger-aggregation: aggregate model on the server side with client contributions.
+ - antibiogo/discard: empty buffer.
+ - antibiogo/pca: pca calculation.
+ - tasks/antibiogo: current prototypical model on server side.
 
-### Running the client locally
+# Web client for model-checkpoint
 
 ```
 cd model-checkpoint/
-npm ci
+npm install
 npm run dev
 ```
+
+This webpage is used on the server side to monitor client contributions. Buttons
+
+- Aggregate: aggregate central model with client contributions (antibiogo/trigger-aggregation API call).
+- Discard: empty buffer (antibiogo/discard API call).
+- Fetch Updates: show client contributions (antibiogo/centroids API call).
+- PCA view: Load PCA: Only works when buffer not empty, shows 2D visualization of current central server model and aggregated model with contributions (antibiogo/pca API call).
+
+# Client contribution
+
+Send a client contribution to buffer of central server:
+
+```
+cd dicojs_mod/
+npm install
+npm run test:fit_new //For client contribution of single embedding corresponding to an unknown label in current model.
+// or
+npm run test:fit_multiple //For client contribution of 3 embeddings (1 new, 2 already existing)
+```
+
+# Example run
+
+Follow all above in order, choosing client contribution. Once contribution from client sent to buffer, go to model-checkpoint vue page, go to PCA model view to check out PCA view before executing aggregate button (pca only works when buffer non empty). Do aggregate to update model (you will see donwloaded csv file model.csv will be updated).
